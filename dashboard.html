@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+    <script src="firebase-db.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - 7 Kebiasaan Anak Indonesia Hebat</title>
@@ -410,8 +413,48 @@
             document.getElementById('currentDate').textContent = now.toLocaleDateString('id-ID', options);
             
             // Handle form submission
-            document.getElementById('habitsForm').addEventListener('submit', function(e) {
-                e.preventDefault();
+            document.getElementById('habitsForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+    
+            const username = localStorage.getItem('currentUser') || 'Guest';
+            const userId = localStorage.getItem('currentUserId') || 'guest_' + Date.now();
+    
+    // Kumpulkan data sederhana dulu
+            const habitData = {
+            userId: userId,
+            username: username,
+            date: new Date().toISOString().split('T')[0],
+            wakeupTime: document.getElementById('wakeupTime').value,
+            bedtime: document.getElementById('bedtime').value
+            };
+    
+    // Tampilkan loading
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan ke Cloud...';
+            submitBtn.disabled = true;
+    
+            try {
+        // SIMPAN KE CLOUD
+            const result = await FirebaseDB.saveHabit(habitData);
+        
+            if (result.success) {
+            alert('✅ BERHASIL! Data tersimpan di cloud.\n\nSekarang data aman dan bisa diakses dari device mana pun!');
+            
+            // Clear form (opsional)
+            // this.reset();
+        } else {
+            alert('⚠️ Data disimpan lokal dulu. Akan sync otomatis saat online.');
+        }
+        
+        } catch (error) {
+        alert('❌ Error: ' + error.message);
+        } finally {
+        // Restore button
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+});
                 
                 // Kumpulkan data dari form
                 const formData = {
@@ -480,4 +523,5 @@
         });
     </script>
 </body>
+
 </html>
