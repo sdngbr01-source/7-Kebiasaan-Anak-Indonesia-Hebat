@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - 7 Kebiasaan Anak Indonesia Hebat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #182848 0%, #4b6cb7 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 450px;
+            border-left: 5px solid #ffc107;
+        }
+        
+        h2 {
+            color: #182848;
+            margin-bottom: 30px;
+            font-size: 28px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .admin-warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .input-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            border-color: #4b6cb7;
+            outline: none;
+        }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(to right, #4b6cb7, #182848);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .error {
+            color: #dc3545;
+            margin-top: 15px;
+            font-size: 14px;
+            text-align: center;
+            padding: 10px;
+            background: #f8d7da;
+            border-radius: 5px;
+            border: 1px solid #f5c6cb;
+            display: none;
+        }
+        
+        .info {
+            background: #e9f7fe;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-size: 14px;
+            color: #0066cc;
+            line-height: 1.5;
+        }
+        
+        .info strong {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+        
+        .links {
+            margin-top: 25px;
+            font-size: 14px;
+            text-align: center;
+            color: #666;
+        }
+        
+        .links a {
+            color: #4b6cb7;
+            text-decoration: none;
+            font-weight: 600;
+            margin: 0 10px;
+        }
+        
+        .links a:hover {
+            text-decoration: underline;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        
+        .shake {
+            animation: shake 0.5s;
+        }
+        
+        .success {
+            color: #28a745;
+            margin-top: 15px;
+            text-align: center;
+            padding: 10px;
+            background: #d4edda;
+            border-radius: 5px;
+            border: 1px solid #c3e6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h2><i class="fas fa-user-cog"></i> ADMIN LOGIN</h2>
+        
+        <div class="admin-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            Hanya untuk administrator sistem. Akses dibatasi.
+        </div>
+        
+        <div class="info">
+            <strong><i class="fas fa-key"></i> Default Login:</strong>
+            Username: <code>admin</code><br>
+            Password: <code>admin123</code>
+        </div>
+        
+        <div class="input-group">
+            <label for="username"><i class="fas fa-user"></i> Username</label>
+            <input type="text" id="username" placeholder="Masukkan username" value="admin">
+        </div>
+        
+        <div class="input-group">
+            <label for="password"><i class="fas fa-lock"></i> Password</label>
+            <input type="password" id="password" placeholder="Masukkan password" value="admin123">
+        </div>
+        
+        <button onclick="login()">
+            <i class="fas fa-sign-in-alt"></i> LOGIN
+        </button>
+        
+        <div id="error" class="error"></div>
+        <div id="success" class="success" style="display: none;"></div>
+        
+        <div class="links">
+            <a href="index.html"><i class="fas fa-arrow-left"></i> Kembali ke Beranda</a> | 
+            <a href="login.html"><i class="fas fa-child"></i> Login sebagai Anak</a>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script>
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('error');
+            const successDiv = document.getElementById('success');
+            
+            // Reset messages
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+            
+            // Hardcoded credentials
+            const validUsername = 'admin';
+            const validPassword = 'admin123';
+            
+            if (username === validUsername && password === validPassword) {
+                // Simpan status login
+                localStorage.setItem('adminLoggedIn', 'true');
+                localStorage.setItem('adminUsername', username);
+                localStorage.setItem('lastLogin', new Date().toLocaleString('id-ID'));
+                localStorage.setItem('adminLoginTime', Date.now());
+                
+                // Tampilkan pesan sukses
+                successDiv.innerHTML = '<i class="fas fa-check-circle"></i> Login berhasil! Mengalihkan...';
+                successDiv.style.display = 'block';
+                
+                // Redirect setelah 1 detik
+                setTimeout(() => {
+                    window.location.href = 'admin-dashboard.html';
+                }, 1000);
+            } else {
+                // Tampilkan pesan error
+                errorDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> Username atau password salah!';
+                errorDiv.style.display = 'block';
+                
+                // Animasi shake
+                document.querySelector('.login-box').classList.add('shake');
+                setTimeout(() => {
+                    document.querySelector('.login-box').classList.remove('shake');
+                }, 500);
+            }
+        }
+        
+        // Enter key support
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+        
+        // Auto focus
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Admin login page loaded');
+            document.getElementById('password').focus();
+            
+            // Auto login jika sudah login
+            const isLoggedIn = localStorage.getItem('adminLoggedIn');
+            if (isLoggedIn === 'true') {
+                window.location.href = 'admin-dashboard.html';
+            }
+        });
+    </script>
+</body>
+</html>

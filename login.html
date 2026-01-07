@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - 7 Kebiasaan Anak Indonesia Hebat</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1><i class="fas fa-child"></i> Masuk sebagai Anak</h1>
+                <p>Masukkan nama Anda untuk mulai mencatat kebiasaan baik</p>
+            </div>
+            
+            <div class="info-box" style="background: #e8f5e9; border: 1px solid #c8e6c9; color: #2e7d32; padding: 12px; border-radius: 8px; margin-bottom: 20px;">
+                <i class="fas fa-info-circle"></i> Hanya anak yang sudah terdaftar oleh admin yang bisa login
+            </div>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">
+                        <i class="fas fa-user"></i> Nama Anda
+                    </label>
+                    <input type="text" id="username" name="username" 
+                           placeholder="Masukkan nama lengkap sesuai registrasi" required>
+                    <small>Nama harus sama dengan yang didaftarkan admin</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="userCode">
+                        <i class="fas fa-id-card"></i> Kode User (Opsional)
+                    </label>
+                    <input type="text" id="userCode" name="userCode" 
+                           placeholder="Masukkan kode jika ada">
+                    <small>Kode unik yang diberikan admin (jika ada)</small>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-sign-in-alt"></i> Masuk
+                </button>
+                
+                <div id="loginMessage" style="margin-top: 15px; text-align: center; display: none;"></div>
+                
+                <div class="login-footer">
+                    <p>Belum terdaftar? Hubungi admin sekolah</p>
+                    <p>Admin? <a href="admin-login.html">Masuk di sini</a></p>
+                    <p><a href="index.html"><i class="fas fa-arrow-left"></i> Kembali ke Beranda</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const userCode = document.getElementById('userCode').value.trim();
+            const messageDiv = document.getElementById('loginMessage');
+            
+            // Clear previous message
+            messageDiv.style.display = 'none';
+            messageDiv.className = '';
+            messageDiv.innerHTML = '';
+            
+            if (!username) {
+                showMessage('Silakan masukkan nama Anda', 'error');
+                return;
+            }
+            
+            // Cek di localStorage atau session
+            const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+            
+            // Cari user yang sesuai
+            const user = registeredUsers.find(u => 
+                u.name.toLowerCase() === username.toLowerCase() ||
+                (u.code && u.code === userCode)
+            );
+            
+            if (user) {
+                // User ditemukan, simpan session
+                localStorage.setItem('currentUser', username);
+                localStorage.setItem('currentUserId', user.id || username);
+                localStorage.setItem('userCode', user.code || '');
+                
+                showMessage('Login berhasil! Mengalihkan...', 'success');
+                
+                // Redirect setelah 1 detik
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1000);
+            } else {
+                showMessage('Nama tidak terdaftar. Hubungi admin untuk registrasi.', 'error');
+            }
+        });
+        
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('loginMessage');
+            messageDiv.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${text}`;
+            messageDiv.className = type;
+            messageDiv.style.display = 'block';
+            
+            if (type === 'error') {
+                messageDiv.style.color = '#dc3545';
+                messageDiv.style.background = '#f8d7da';
+                messageDiv.style.padding = '10px';
+                messageDiv.style.borderRadius = '5px';
+                messageDiv.style.border = '1px solid #f5c6cb';
+            } else {
+                messageDiv.style.color = '#28a745';
+                messageDiv.style.background = '#d4edda';
+                messageDiv.style.padding = '10px';
+                messageDiv.style.borderRadius = '5px';
+                messageDiv.style.border = '1px solid #c3e6cb';
+            }
+        }
+        
+        // Auto-check jika ada parameter
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const nameParam = urlParams.get('name');
+            const codeParam = urlParams.get('code');
+            
+            if (nameParam) {
+                document.getElementById('username').value = decodeURIComponent(nameParam);
+            }
+            if (codeParam) {
+                document.getElementById('userCode').value = decodeURIComponent(codeParam);
+            }
+        });
+    </script>
+</body>
+</html>
