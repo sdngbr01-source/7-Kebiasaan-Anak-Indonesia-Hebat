@@ -8,9 +8,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Tambahkan library untuk Excel -->
     <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
-    <script src="firebase-db.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <style>
         /* Admin Dashboard Styles */
         .admin-container {
@@ -194,6 +195,11 @@
             color: #856404;
         }
         
+        .badge-synced {
+            background: #cce5ff;
+            color: #004085;
+        }
+        
         .admin-actions {
             display: flex;
             gap: 15px;
@@ -240,6 +246,43 @@
         .btn-users {
             background: linear-gradient(to right, #ffc107, #e0a800);
             color: #212529;
+        }
+        
+        .btn-sync {
+            background: linear-gradient(to right, #6610f2, #5a00cc);
+        }
+        
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            background: #e8f4f8;
+            margin-left: 15px;
+        }
+        
+        .sync-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .sync-online {
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+        
+        .sync-offline {
+            background: #dc3545;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
         }
         
         /* Modal Styles */
@@ -328,6 +371,12 @@
                 width: 100%;
                 justify-content: center;
             }
+            
+            .sync-status {
+                margin-left: 0;
+                margin-top: 10px;
+                justify-content: center;
+            }
         }
         
         @media (max-width: 576px) {
@@ -343,17 +392,54 @@
                 min-width: 100%;
             }
         }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+            font-size: 1.2rem;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #4b6cb7;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
     <div class="admin-container">
         <!-- Admin Header -->
         <div class="admin-header">
-            <div class="admin-info">
-                <div class="admin-avatar" id="adminAvatar">A</div>
-                <div class="admin-details">
-                    <h2 id="adminName">Admin</h2>
-                    <p>Last login: <span id="lastLogin">-</span></p>
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div class="admin-info">
+                    <div class="admin-avatar" id="adminAvatar">A</div>
+                    <div class="admin-details">
+                        <h2 id="adminName">Admin</h2>
+                        <p>Last login: <span id="lastLogin">-</span></p>
+                    </div>
+                </div>
+                <div class="sync-status" id="syncStatus">
+                    <span class="sync-indicator sync-offline" id="syncIndicator"></span>
+                    <span id="syncText">Offline Mode</span>
                 </div>
             </div>
             <button class="action-btn btn-logout" onclick="logout()">
@@ -381,6 +467,36 @@
             </div>
         </div>
         
+        <!-- Firebase Actions -->
+        <div style="background: white; padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #e9ecef;">
+            <h3 style="color: #182848; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-cloud"></i> Firebase Cloud Sync
+            </h3>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <button class="action-btn btn-sync" onclick="syncToFirebase()">
+                    <i class="fas fa-cloud-upload-alt"></i> Sync ke Firebase
+                </button>
+                <button class="action-btn btn-sync" onclick="syncFromFirebase()" style="background: linear-gradient(to right, #20c997, #17a2b8);">
+                    <i class="fas fa-cloud-download-alt"></i> Sync dari Firebase
+                </button>
+                <button class="action-btn btn-sync" onclick="showFirebaseConfig()" style="background: linear-gradient(to right, #ffc107, #fd7e14); color: #212529;">
+                    <i class="fas fa-cog"></i> Firebase Config
+                </button>
+                <button class="action-btn" onclick="clearAllData()" style="background: linear-gradient(to right, #dc3545, #c82333);">
+                    <i class="fas fa-trash"></i> Clear All Data
+                </button>
+            </div>
+            <div style="margin-top: 15px; font-size: 0.9rem; color: #666;">
+                <div id="firebaseInfo">Firebase: Not Connected</div>
+                <div id="syncProgress" style="display: none;">
+                    <div style="background: #e9ecef; height: 10px; border-radius: 5px; margin-top: 5px;">
+                        <div id="progressBar" style="background: #4b6cb7; height: 100%; border-radius: 5px; width: 0%; transition: width 0.3s;"></div>
+                    </div>
+                    <div style="text-align: center; margin-top: 5px;" id="progressText">0%</div>
+                </div>
+            </div>
+        </div>
+        
         <!-- Filters -->
         <div class="filters-section">
             <div class="filter-group">
@@ -398,6 +514,7 @@
                     <option value="Lengkap">Lengkap</option>
                     <option value="Belum Lengkap">Belum Lengkap</option>
                     <option value="imported">Imported</option>
+                    <option value="synced">Synced to Cloud</option>
                 </select>
             </div>
             <div style="display: flex; gap: 10px;">
@@ -414,9 +531,14 @@
         <div class="admin-table-container">
             <div class="table-header">
                 <h3><i class="fas fa-table"></i> Data Kebiasaan Anak</h3>
-                <button onclick="refreshData()" class="action-btn" style="background: #6c757d; padding: 10px 20px;">
-                    <i class="fas fa-sync-alt"></i> Refresh Data
-                </button>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="refreshData()" class="action-btn" style="background: #6c757d; padding: 10px 20px;">
+                        <i class="fas fa-sync-alt"></i> Refresh Data
+                    </button>
+                    <button onclick="exportAllData()" class="action-btn" style="background: #28a745; padding: 10px 20px;">
+                        <i class="fas fa-file-excel"></i> Export
+                    </button>
+                </div>
             </div>
             <table class="data-table">
                 <thead>
@@ -432,6 +554,7 @@
                         <th>Bantu Ortu</th>
                         <th>Tidur Malam</th>
                         <th>Status</th>
+                        <th>Cloud</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
@@ -457,14 +580,6 @@
             <button class="action-btn" onclick="window.open('backup-system.html', '_blank')" style="background: #28a745;">
                 <i class="fas fa-database"></i> Backup System
             </button>
-            <!-- Tambah button ini -->
-            <button class="action-btn" onclick="loadUsersFromGitHub()" style="background: #20c997;">
-            <i class="fas fa-cloud-download-alt"></i> Load Users dari GitHub
-            </button>
-
-            <button class="action-btn" onclick="checkGitHubData()" style="background: #6c757d;">
-            <i class="fas fa-sync-alt"></i> Cek Data GitHub
-            </button>
         </div>
     </div>
     
@@ -483,8 +598,87 @@
         </div>
     </div>
     
-    <script src="script.js"></script>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="spinner"></div>
+        <div id="loadingText">Loading...</div>
+    </div>
+
     <script>
+        // ========== FIREBASE CONFIGURATION ==========
+        
+        // Firebase configuration - EDIT INI DENGAN KONFIGURASI ANDA
+        const firebaseConfig = {
+            	apiKey: "AIzaSyD5eyduaLigPJGqKYQJAZFZx3xvdm-l7s0",
+  		authDomain: "kaih-2bea0.firebaseapp.com",
+  		databaseURL: "https://kaih-2bea0-default-rtdb.asia-southeast1.firebasedatabase.app",
+  		projectId: "kaih-2bea0",
+  		storageBucket: "kaih-2bea0.firebasestorage.app",
+  		messagingSenderId: "644778400874",
+  		appId: "1:644778400874:web:979b195a6152e7ed87fe13"
+        };
+
+        // Initialize Firebase
+        let firebaseApp;
+        let database;
+        let auth;
+        let isFirebaseInitialized = false;
+
+        function initFirebase() {
+            try {
+                if (!firebase.apps.length) {
+                    firebaseApp = firebase.initializeApp(firebaseConfig);
+                    console.log("Firebase initialized successfully");
+                } else {
+                    firebaseApp = firebase.app();
+                    console.log("Firebase already initialized");
+                }
+                
+                database = firebase.database();
+                auth = firebase.auth();
+                isFirebaseInitialized = true;
+                
+                // Update UI status
+                updateSyncStatus(true);
+                document.getElementById('firebaseInfo').innerHTML = 
+                    '<i class="fas fa-check-circle" style="color: #28a745;"></i> Firebase: Connected';
+                
+                // Try to sign in anonymously if needed
+                signInAnonymously();
+                
+            } catch (error) {
+                console.error("Firebase initialization error:", error);
+                updateSyncStatus(false);
+                document.getElementById('firebaseInfo').innerHTML = 
+                    '<i class="fas fa-times-circle" style="color: #dc3545;"></i> Firebase: Connection Error';
+            }
+        }
+
+        function signInAnonymously() {
+            if (!auth) return;
+            
+            auth.signInAnonymously()
+                .then(() => {
+                    console.log("Signed in anonymously");
+                })
+                .catch(error => {
+                    console.error("Anonymous sign in error:", error);
+                });
+        }
+
+        function updateSyncStatus(online) {
+            const indicator = document.getElementById('syncIndicator');
+            const text = document.getElementById('syncText');
+            
+            if (online) {
+                indicator.className = 'sync-indicator sync-online';
+                text.textContent = 'Online Mode';
+            } else {
+                indicator.className = 'sync-indicator sync-offline';
+                text.textContent = 'Offline Mode';
+            }
+        }
+
         // ========== ADMIN FUNCTIONS ==========
         
         // Inisialisasi
@@ -496,13 +690,21 @@
                 return; // Stop execution jika belum login
             }
             
+            // Initialize Firebase
+            initFirebase();
+            
             // Load data jika sudah login
             loadData();
             updateStats();
             updateAdminInfo();
+            
+            // Setup event listeners untuk filter
+            document.getElementById('filterName').addEventListener('input', applyFilters);
+            document.getElementById('filterStatus').addEventListener('change', applyFilters);
+            document.getElementById('filterDate').addEventListener('change', applyFilters);
         });
         
-        // Cek login admin - FIXED VERSION
+        // Cek login admin
         function checkAdminLogin() {
             console.log("Checking admin login...");
             const isLoggedIn = localStorage.getItem('adminLoggedIn');
@@ -543,6 +745,383 @@
                 
                 window.location.href = 'index.html';
             }
+        }
+        
+        // Show Firebase Configuration Modal
+        function showFirebaseConfig() {
+            const modalBody = document.getElementById('modalBody');
+            modalBody.innerHTML = `
+                <div style="margin-bottom: 25px;">
+                    <h3 class="modal-title"><i class="fas fa-cog"></i> Firebase Configuration</h3>
+                    <p style="color: #666;">Konfigurasi koneksi Firebase. Edit sesuai dengan project Firebase Anda.</p>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                    <h5 style="color: #182848; margin-bottom: 15px;">Konfigurasi Saat Ini:</h5>
+                    <pre style="background: white; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 0.85rem;">
+${JSON.stringify(firebaseConfig, null, 2)}
+                    </pre>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h5 style="color: #182848; margin-bottom: 10px;">Edit Konfigurasi:</h5>
+                    <textarea id="newConfig" style="width: 100%; height: 200px; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-family: monospace; font-size: 0.9rem;">
+${JSON.stringify(firebaseConfig, null, 2)}
+                    </textarea>
+                </div>
+                
+                <div style="display: flex; gap: 15px; justify-content: center;">
+                    <button class="action-btn" onclick="updateFirebaseConfig()" style="background: #28a745;">
+                        <i class="fas fa-save"></i> Update Config
+                    </button>
+                    <button class="action-btn" onclick="testFirebaseConnection()" style="background: #17a2b8;">
+                        <i class="fas fa-plug"></i> Test Connection
+                    </button>
+                    <button class="action-btn" onclick="resetFirebaseConfig()" style="background: #6c757d;">
+                        <i class="fas fa-redo"></i> Reset
+                    </button>
+                </div>
+            `;
+            openModal();
+        }
+        
+        function updateFirebaseConfig() {
+            try {
+                const newConfigText = document.getElementById('newConfig').value;
+                const newConfig = JSON.parse(newConfigText);
+                
+                // Validasi konfigurasi
+                const requiredFields = ['apiKey', 'authDomain', 'databaseURL', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
+                for (const field of requiredFields) {
+                    if (!newConfig[field]) {
+                        throw new Error(`Field ${field} tidak boleh kosong`);
+                    }
+                }
+                
+                // Simpan ke localStorage
+                localStorage.setItem('firebaseConfig', JSON.stringify(newConfig));
+                
+                // Reload halaman untuk apply config baru
+                alert('✅ Konfigurasi Firebase berhasil diperbarui! Halaman akan direload.');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+                
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+        
+        function testFirebaseConnection() {
+            showLoading('Testing Firebase connection...');
+            
+            try {
+                const newConfigText = document.getElementById('newConfig').value;
+                const testConfig = JSON.parse(newConfigText);
+                
+                // Buat app Firebase sementara untuk testing
+                const testApp = firebase.initializeApp(testConfig, 'testApp');
+                const testDb = firebase.database(testApp);
+                
+                // Test write dan read
+                const testRef = testDb.ref('connectionTest/' + Date.now());
+                
+                testRef.set({
+                    test: true,
+                    timestamp: new Date().toISOString()
+                })
+                .then(() => {
+                    return testRef.once('value');
+                })
+                .then(snapshot => {
+                    hideLoading();
+                    alert('✅ Koneksi Firebase berhasil! Data berhasil ditulis dan dibaca.');
+                    
+                    // Hapus test app
+                    testApp.delete();
+                })
+                .catch(error => {
+                    hideLoading();
+                    alert('❌ Koneksi gagal: ' + error.message);
+                    
+                    try {
+                        testApp.delete();
+                    } catch (e) {
+                        // Ignore
+                    }
+                });
+                
+            } catch (error) {
+                hideLoading();
+                alert('❌ Error: ' + error.message);
+            }
+        }
+        
+        function resetFirebaseConfig() {
+            if (confirm('Reset ke konfigurasi default?')) {
+                localStorage.removeItem('firebaseConfig');
+                alert('Konfigurasi telah direset. Halaman akan direload.');
+                window.location.reload();
+            }
+        }
+        
+        // ========== FIREBASE SYNC FUNCTIONS ==========
+        
+        function syncToFirebase() {
+            if (!isFirebaseInitialized) {
+                alert('Firebase belum diinisialisasi. Periksa konfigurasi.');
+                return;
+            }
+            
+            if (!confirm('Sync semua data ke Firebase? Data yang ada di cloud akan ditimpa.')) {
+                return;
+            }
+            
+            showLoading('Syncing data to Firebase...');
+            
+            // Ambil data dari localStorage
+            const habitsData = JSON.parse(localStorage.getItem('habitsData') || '[]');
+            const usersData = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+            
+            // Update progress
+            updateProgress(10);
+            
+            // Upload habits data
+            const habitsRef = database.ref('habits');
+            const updatePromises = [];
+            
+            // Data untuk tracking
+            let uploadedCount = 0;
+            let totalCount = habitsData.length;
+            
+            habitsData.forEach((item, index) => {
+                // Tambahkan sync timestamp
+                item.syncedAt = new Date().toISOString();
+                item.syncedBy = localStorage.getItem('adminUsername') || 'admin';
+                
+                // Generate unique ID jika belum ada
+                if (!item.id) {
+                    item.id = 'HABIT_' + Date.now() + '_' + index;
+                }
+                
+                // Upload ke Firebase
+                const promise = habitsRef.child(item.id).set(item)
+                    .then(() => {
+                        uploadedCount++;
+                        const progress = 10 + Math.floor((uploadedCount / totalCount) * 60);
+                        updateProgress(progress);
+                    })
+                    .catch(error => {
+                        console.error('Error uploading habit:', error);
+                    });
+                
+                updatePromises.push(promise);
+            });
+            
+            updateProgress(70);
+            
+            // Upload users data
+            const usersRef = database.ref('users');
+            let usersUploaded = 0;
+            
+            usersData.forEach((user, index) => {
+                user.syncedAt = new Date().toISOString();
+                
+                if (!user.id) {
+                    user.id = 'USER_' + Date.now() + '_' + index;
+                }
+                
+                const promise = usersRef.child(user.id).set(user)
+                    .then(() => {
+                        usersUploaded++;
+                    });
+                
+                updatePromises.push(promise);
+            });
+            
+            // Tunggu semua upload selesai
+            Promise.all(updatePromises)
+                .then(() => {
+                    updateProgress(90);
+                    
+                    // Update metadata
+                    const metaRef = database.ref('metadata');
+                    const metadata = {
+                        lastSync: new Date().toISOString(),
+                        totalHabits: habitsData.length,
+                        totalUsers: usersData.length,
+                        syncedBy: localStorage.getItem('adminUsername') || 'admin',
+                        version: '1.0'
+                    };
+                    
+                    return metaRef.set(metadata);
+                })
+                .then(() => {
+                    updateProgress(100);
+                    
+                    // Update status di localStorage
+                    habitsData.forEach(item => {
+                        item.cloudSynced = true;
+                    });
+                    localStorage.setItem('habitsData', JSON.stringify(habitsData));
+                    
+                    setTimeout(() => {
+                        hideLoading();
+                        alert(`✅ Sync berhasil!\n\n${habitsData.length} data kebiasaan dan ${usersData.length} data user telah diupload ke Firebase.`);
+                        loadData();
+                    }, 500);
+                })
+                .catch(error => {
+                    hideLoading();
+                    alert('❌ Error sync ke Firebase: ' + error.message);
+                    console.error('Sync error:', error);
+                });
+        }
+        
+        function syncFromFirebase() {
+            if (!isFirebaseInitialized) {
+                alert('Firebase belum diinisialisasi. Periksa konfigurasi.');
+                return;
+            }
+            
+            if (!confirm('Sync data dari Firebase? Data lokal akan digabungkan dengan data dari cloud.')) {
+                return;
+            }
+            
+            showLoading('Syncing data from Firebase...');
+            updateProgress(20);
+            
+            // Ambil data dari Firebase
+            const habitsRef = database.ref('habits');
+            const usersRef = database.ref('users');
+            
+            Promise.all([
+                habitsRef.once('value'),
+                usersRef.once('value')
+            ])
+            .then(([habitsSnapshot, usersSnapshot]) => {
+                updateProgress(60);
+                
+                const firebaseHabits = [];
+                const firebaseUsers = [];
+                
+                // Process habits data
+                habitsSnapshot.forEach(childSnapshot => {
+                    const habit = childSnapshot.val();
+                    habit.id = childSnapshot.key;
+                    firebaseHabits.push(habit);
+                });
+                
+                // Process users data
+                usersSnapshot.forEach(childSnapshot => {
+                    const user = childSnapshot.val();
+                    user.id = childSnapshot.key;
+                    firebaseUsers.push(user);
+                });
+                
+                updateProgress(80);
+                
+                // Merge dengan data lokal
+                const localHabits = JSON.parse(localStorage.getItem('habitsData') || '[]');
+                const localUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+                
+                // Gabungkan data (prioritaskan data terbaru)
+                const mergedHabits = mergeArrays(localHabits, firebaseHabits);
+                const mergedUsers = mergeArrays(localUsers, firebaseUsers);
+                
+                updateProgress(90);
+                
+                // Simpan ke localStorage
+                localStorage.setItem('habitsData', JSON.stringify(mergedHabits));
+                localStorage.setItem('registeredUsers', JSON.stringify(mergedUsers));
+                
+                // Simpan metadata sync
+                localStorage.setItem('lastFirebaseSync', new Date().toISOString());
+                localStorage.setItem('firebaseHabitsCount', firebaseHabits.length);
+                localStorage.setItem('firebaseUsersCount', firebaseUsers.length);
+                
+                updateProgress(100);
+                
+                setTimeout(() => {
+                    hideLoading();
+                    alert(`✅ Sync dari Firebase berhasil!\n\n${firebaseHabits.length} data kebiasaan dan ${firebaseUsers.length} data user telah diambil dari cloud.`);
+                    loadData();
+                    updateStats();
+                }, 500);
+                
+            })
+            .catch(error => {
+                hideLoading();
+                alert('❌ Error sync dari Firebase: ' + error.message);
+                console.error('Sync error:', error);
+            });
+        }
+        
+        function mergeArrays(localArray, remoteArray) {
+            // Gabungkan array dengan menghindari duplikat berdasarkan ID atau kombinasi unik
+            const mergedMap = new Map();
+            
+            // Tambahkan data lokal
+            localArray.forEach(item => {
+                const key = item.id || `${item.name}_${item.date}`;
+                mergedMap.set(key, item);
+            });
+            
+            // Tambahkan/timpa dengan data remote (prioritas lebih baru)
+            remoteArray.forEach(item => {
+                const key = item.id || `${item.name}_${item.date}`;
+                const existing = mergedMap.get(key);
+                
+                if (!existing || (item.updatedAt && existing.updatedAt && new Date(item.updatedAt) > new Date(existing.updatedAt))) {
+                    mergedMap.set(key, item);
+                }
+            });
+            
+            return Array.from(mergedMap.values());
+        }
+        
+        function clearAllData() {
+            if (!confirm('HAPUS SEMUA DATA? Ini akan menghapus semua data di localStorage. Tindakan ini tidak dapat dibatalkan!')) {
+                return;
+            }
+            
+            if (!confirm('YAKIN HAPUS SEMUA DATA? Ketik "HAPUS" untuk konfirmasi.')) {
+                return;
+            }
+            
+            const confirmation = prompt('Ketik "HAPUS" untuk menghapus semua data:');
+            if (confirmation !== 'HAPUS') {
+                alert('Penghapusan dibatalkan.');
+                return;
+            }
+            
+            // Hapus semua data
+            localStorage.removeItem('habitsData');
+            localStorage.removeItem('registeredUsers');
+            localStorage.removeItem('firebaseConfig');
+            localStorage.removeItem('lastFirebaseSync');
+            
+            alert('✅ Semua data telah dihapus!');
+            loadData();
+            updateStats();
+        }
+        
+        // ========== HELPER FUNCTIONS ==========
+        
+        function showLoading(text) {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            document.getElementById('syncProgress').style.display = 'block';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+            document.getElementById('syncProgress').style.display = 'none';
+        }
+        
+        function updateProgress(percentage) {
+            document.getElementById('progressBar').style.width = percentage + '%';
+            document.getElementById('progressText').textContent = percentage + '%';
         }
         
         // Modal Functions
@@ -684,6 +1263,8 @@
         function handleExcelUpload(file) {
             if (!file) return;
             
+            showLoading('Processing Excel file...');
+            
             const reader = new FileReader();
             
             reader.onload = function(e) {
@@ -702,7 +1283,10 @@
                     for (let i = 1; i < jsonData.length; i++) {
                         const row = jsonData[i];
                         if (row && row.length >= 9) {
+                            const id = 'EXCEL_' + Date.now() + '_' + i;
+                            
                             processedData.push({
+                                id: id,
                                 name: row[0] || '',
                                 date: row[1] || new Date().toISOString().split('T')[0],
                                 wakeup: row[2] || '',
@@ -712,7 +1296,9 @@
                                 study: row[6] || '',
                                 help: row[7] || '',
                                 bedtime: row[8] || '',
-                                status: 'imported'
+                                status: 'imported',
+                                importedAt: new Date().toISOString(),
+                                importedBy: localStorage.getItem('adminUsername') || 'admin'
                             });
                         }
                     }
@@ -723,21 +1309,25 @@
                         const newData = [...existingData, ...processedData];
                         localStorage.setItem('habitsData', JSON.stringify(newData));
                         
+                        hideLoading();
                         alert(`✅ Berhasil mengimpor ${processedData.length} data dari Excel!`);
                         closeModal();
                         loadData();
                         updateStats();
                     } else {
+                        hideLoading();
                         alert('❌ Tidak ada data yang valid ditemukan dalam file Excel.');
                     }
                     
                 } catch (error) {
+                    hideLoading();
                     console.error('Error reading Excel:', error);
                     alert('❌ Error membaca file Excel: ' + error.message);
                 }
             };
             
             reader.onerror = function() {
+                hideLoading();
                 alert('❌ Error membaca file.');
             };
             
@@ -748,6 +1338,8 @@
         function handleJSONUpload(file) {
             if (!file) return;
             
+            showLoading('Processing JSON file...');
+            
             const reader = new FileReader();
             
             reader.onload = function(e) {
@@ -755,23 +1347,37 @@
                     const data = JSON.parse(e.target.result);
                     
                     if (Array.isArray(data)) {
-                        // Simpan ke localStorage
-                        localStorage.setItem('habitsData', JSON.stringify(data));
+                        // Tambahkan metadata untuk data yang diimport
+                        const processedData = data.map((item, index) => {
+                            if (!item.id) {
+                                item.id = 'JSON_' + Date.now() + '_' + index;
+                            }
+                            item.importedAt = new Date().toISOString();
+                            item.importedBy = localStorage.getItem('adminUsername') || 'admin';
+                            return item;
+                        });
                         
+                        // Simpan ke localStorage
+                        localStorage.setItem('habitsData', JSON.stringify(processedData));
+                        
+                        hideLoading();
                         alert(`✅ Berhasil mengimpor ${data.length} data dari JSON!`);
                         closeModal();
                         loadData();
                         updateStats();
                     } else {
+                        hideLoading();
                         alert('❌ Format JSON tidak valid. Harus berupa array.');
                     }
                 } catch (error) {
+                    hideLoading();
                     console.error('Error reading JSON:', error);
                     alert('❌ Error membaca file JSON: ' + error.message);
                 }
             };
             
             reader.onerror = function() {
+                hideLoading();
                 alert('❌ Error membaca file.');
             };
             
@@ -809,11 +1415,12 @@
             
             // Siapkan data untuk Excel
             const excelData = [
-                ['Nama Anak', 'Tanggal', 'Bangun Pagi', 'Sholat', 'Olahraga', 'Makan', 'Belajar', 'Bantu Ortu', 'Tidur Malam', 'Status']
+                ['No', 'Nama Anak', 'Tanggal', 'Bangun Pagi', 'Sholat', 'Olahraga', 'Makan', 'Belajar', 'Bantu Ortu', 'Tidur Malam', 'Status', 'Cloud Sync']
             ];
             
-            data.forEach(item => {
+            data.forEach((item, index) => {
                 excelData.push([
+                    index + 1,
                     item.name || item.username || '',
                     item.date || '',
                     item.wakeup || item.habits?.wakeupTime || '',
@@ -823,7 +1430,8 @@
                     getStudyInfo(item),
                     getHelpStatus(item),
                     item.bedtime || item.habits?.bedtime || '',
-                    getStatusText(item)
+                    getStatusText(item),
+                    item.cloudSynced ? 'Ya' : 'Tidak'
                 ]);
             });
             
@@ -907,6 +1515,7 @@
                                         <div style="font-size: 0.85rem; color: #666; margin-top: 5px;">
                                             <span style="display: inline-block; margin-right: 15px;"><i class="fas fa-id-card"></i> Kode: ${user.code || '-'}</span>
                                             <span><i class="fas fa-graduation-cap"></i> Kelas: ${user.class || '-'}</span>
+                                            ${user.syncedAt ? `<br><span><i class="fas fa-cloud"></i> Synced: ${formatDate(user.syncedAt)}</span>` : ''}
                                         </div>
                                     </div>
                                     <div style="display: flex; gap: 5px;">
@@ -1002,6 +1611,8 @@
         function handleUserUpload(file) {
             if (!file) return;
             
+            showLoading('Processing user Excel file...');
+            
             const reader = new FileReader();
             
             reader.onload = function(e) {
@@ -1046,7 +1657,8 @@
                                 code: code,
                                 notes: row[3] ? row[3].toString().trim() : '',
                                 createdAt: new Date().toISOString(),
-                                isActive: true
+                                isActive: true,
+                                syncedAt: null
                             };
                             
                             newUsers.push(newUser);
@@ -1059,21 +1671,25 @@
                         const allUsers = [...existingUsers, ...newUsers];
                         localStorage.setItem('registeredUsers', JSON.stringify(allUsers));
                         
+                        hideLoading();
                         alert(`✅ Berhasil menambahkan ${newUsers.length} user baru! ${skipped > 0 ? `(${skipped} user dilewati karena sudah ada)` : ''}`);
                         
                         // Refresh modal
                         showUserManagement();
                     } else {
+                        hideLoading();
                         alert('Tidak ada user baru yang ditemukan atau semua user sudah terdaftar.');
                     }
                     
                 } catch (error) {
+                    hideLoading();
                     console.error('Error reading Excel:', error);
                     alert('❌ Error membaca file Excel: ' + error.message);
                 }
             };
             
             reader.onerror = function() {
+                hideLoading();
                 alert('❌ Error membaca file.');
             };
             
@@ -1110,7 +1726,8 @@
                 code: code,
                 notes: 'Ditambahkan manual',
                 createdAt: new Date().toISOString(),
-                isActive: true
+                isActive: true,
+                syncedAt: null
             };
             
             // Tambahkan ke existing users
@@ -1178,7 +1795,7 @@
             
             // Siapkan data untuk Excel
             const excelData = [
-                ['ID User', 'Nama Lengkap', 'Kelas', 'Kode User', 'Tanggal Daftar', 'Status']
+                ['ID User', 'Nama Lengkap', 'Kelas', 'Kode User', 'Tanggal Daftar', 'Status', 'Cloud Sync']
             ];
             
             users.forEach(user => {
@@ -1188,7 +1805,8 @@
                     user.class || '',
                     user.code || '',
                     formatDate(user.createdAt),
-                    user.isActive ? 'Aktif' : 'Nonaktif'
+                    user.isActive ? 'Aktif' : 'Nonaktif',
+                    user.syncedAt ? 'Ya' : 'Tidak'
                 ]);
             });
             
@@ -1275,7 +1893,7 @@
             if (data.length === 0) {
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="11" style="text-align: center; padding: 50px;">
+                        <td colspan="12" style="text-align: center; padding: 50px;">
                             <div style="color: #999; margin-bottom: 20px;">
                                 <i class="fas fa-database" style="font-size: 3rem;"></i>
                             </div>
@@ -1291,8 +1909,11 @@
             
             tableBody.innerHTML = '';
             
+            // Terapkan filter
+            const filteredData = applyFilters(data);
+            
             // Tampilkan data terbaru di atas
-            const sortedData = [...data].reverse();
+            const sortedData = [...filteredData].reverse();
             
             sortedData.forEach((item, index) => {
                 const row = document.createElement('tr');
@@ -1309,14 +1930,60 @@
                     <td>${getHelpStatus(item)}</td>
                     <td>${item.bedtime || item.habits?.bedtime || '--:--'}</td>
                     <td>
-                        <span class="badge ${getStatusText(item) === 'Lengkap' ? 'badge-complete' : 'badge-incomplete'}">
+                        <span class="badge ${getStatusText(item) === 'Lengkap' ? 'badge-complete' : getStatusText(item) === 'synced' ? 'badge-synced' : 'badge-incomplete'}">
                             ${getStatusText(item)}
                         </span>
+                    </td>
+                    <td>
+                        ${item.cloudSynced ? 
+                            '<span style="color: #28a745;"><i class="fas fa-cloud"></i> Synced</span>' : 
+                            '<span style="color: #dc3545;"><i class="fas fa-cloud-slash"></i> Local</span>'
+                        }
                     </td>
                 `;
                 
                 tableBody.appendChild(row);
             });
+        }
+        
+        function applyFilters(data = null) {
+            if (!data) {
+                data = JSON.parse(localStorage.getItem('habitsData') || '[]');
+            }
+            
+            const filterName = document.getElementById('filterName').value.toLowerCase();
+            const filterStatus = document.getElementById('filterStatus').value;
+            const filterDate = document.getElementById('filterDate').value;
+            
+            let filteredData = [...data];
+            
+            // Filter by name
+            if (filterName) {
+                filteredData = filteredData.filter(item => {
+                    const name = (item.name || item.username || '').toLowerCase();
+                    return name.includes(filterName);
+                });
+            }
+            
+            // Filter by status
+            if (filterStatus !== 'all') {
+                filteredData = filteredData.filter(item => {
+                    if (filterStatus === 'synced') {
+                        return item.cloudSynced === true;
+                    }
+                    return getStatusText(item) === filterStatus;
+                });
+            }
+            
+            // Filter by date
+            if (filterDate) {
+                filteredData = filteredData.filter(item => {
+                    const itemDate = item.date ? item.date.split('T')[0] : '';
+                    return itemDate === filterDate;
+                });
+            }
+            
+            return filteredData;
         }
         
         function formatDate(dateString) {
@@ -1339,11 +2006,7 @@
             
             console.log("Updating stats, total habits data:", data.length, "total users:", users.length);
             
-            // Total unique users
-            const uniqueUsers = new Set();
-            data.forEach(item => {
-                uniqueUsers.add(item.name || item.username || '');
-            });
+            // Total users
             document.getElementById('totalUsers').textContent = users.length;
             
             // Today's data
@@ -1396,11 +2059,6 @@
             return `${avgHours.toString().padStart(2, '0')}:${avgMins.toString().padStart(2, '0')}`;
         }
         
-        function applyFilters() {
-            alert('Filter diterapkan! Fitur filter akan diimplementasikan lebih lanjut.');
-            // Implementasi filter lebih lanjut bisa ditambahkan
-        }
-        
         function resetFilters() {
             document.getElementById('filterDate').value = '';
             document.getElementById('filterName').value = '';
@@ -1415,7 +2073,4 @@
         }
     </script>
 </body>
-
 </html>
-
-
