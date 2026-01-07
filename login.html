@@ -6,6 +6,256 @@
     <title>Login - 7 Kebiasaan Anak Indonesia Hebat</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tambahkan script untuk GitHub Database -->
+    <script>
+        // =============================================
+        // GITHUB DATABASE LOADER (Untuk login.html)
+        // =============================================
+        
+        const GITHUB_REPO = 'sdngbr01-source/7kebiasaan-anak';
+        const USERS_DB_FILE = 'user-database.son';
+        
+        // Fungsi utama: Load users dari GitHub
+        async function loadUsersFromGitHub() {
+            console.log('📡 Loading users from GitHub...');
+            
+            try {
+                const response = await fetch(
+                    `https://raw.githubusercontent.com/${GITHUB_REPO}/main/${USERS_DB_FILE}?_t=${Date.now()}`
+                );
+                
+                if (!response.ok) {
+                    throw new Error(`GitHub Error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const users = data.registeredUsers || data.users || [];
+                
+                console.log(`✅ Loaded ${users.length} users from GitHub`);
+                
+                // Simpan ke localStorage sebagai cache
+                localStorage.setItem('registeredUsers', JSON.stringify(users));
+                localStorage.setItem('lastGitHubSync', new Date().toISOString());
+                localStorage.setItem('usersSource', 'github');
+                
+                return users;
+                
+            } catch (error) {
+                console.error('❌ GitHub load failed:', error);
+                
+                // Fallback ke localStorage jika ada
+                const localUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+                console.log(`Using local cache: ${localUsers.length} users`);
+                
+                // Tampilkan warning jika menggunakan cache
+                if (localUsers.length > 0) {
+                    showLoginMessage(`⚠️ Using cached data (${localUsers.length} users). GitHub: ${error.message}`, 'warning');
+                }
+                
+                return localUsers;
+            }
+        }
+        
+        // Fungsi login yang diperbarui (langsung dari GitHub)
+        async function handleLoginWithGitHub(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const userCode = document.getElementById('userCode').value.trim();
+            const messageDiv = document.getElementById('loginMessage');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            
+            // Clear previous message
+            messageDiv.style.display = 'none';
+            messageDiv.className = '';
+            messageDiv.innerHTML = '';
+            
+            if (!username) {
+                showLoginMessage('Silakan masukkan nama Anda', 'error');
+                return;
+            }
+            
+            // Show loading state
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+            submitBtn.disabled = true;
+            
+            try {
+                console.log('🔍 Searching user:', username);
+                
+                // 1. Coba load dari GitHub terlebih dahulu
+                const users = await loadUsersFromGitHub();
+                console.log('Total users available:', users.length);
+                
+                // 2. Cari user yang sesuai
+                const user = users.find(u => 
+                    u.name.toLowerCase() === username.toLowerCase() ||
+                    (u.code && u.code === userCode)
+                );
+                
+                if (user) {
+                    if (user.isActive === false) {
+                        showLoginMessage('Akun ini tidak aktif. Hubungi admin.', 'error');
+                        return;
+                    }
+                    
+                    // User ditemukan, simpan session
+                    localStorage.setItem('currentUser', user.name);
+                    localStorage.setItem('currentUserId', user.id || user.name);
+                    localStorage.setItem('userCode', user.code || '');
+                    localStorage.setItem('isLoggedIn', 'true');
+                    localStorage.setItem('loginTime', new Date().toISOString());
+                    
+                    // Log login success
+                    console.log('✅ Login successful:', user.name);
+                    
+                    showLoginMessage('Login berhasil! Mengalihkan...', 'success');
+                    
+                    // Redirect setelah 1 detik
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1000);
+                    
+                } else {
+                    showLoginMessage('Nama tidak terdaftar. Hubungi admin untuk registrasi.', 'error');
+                    
+                    // Tampilkan saran jika ada user dengan nama mirip
+                    const similarUsers = users.filter(u => 
+                        u.name.toLowerCase().includes(username.toLowerCase().substring(0, 3))
+                    );
+                    
+                    if (similarUsers.length > 0) {
+                        console.log('Similar users found:', similarUsers.map(u => u.name));
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                showLoginMessage('Error: ' + error.message, 'error');
+            } finally {
+                // Restore button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+        
+        // Show message function
+        function showLoginMessage(text, type) {
+            const messageDiv = document.getElementById('loginMessage');
+            const icon = type === 'success' ? 'check-circle' : 
+                        type === 'warning' ? 'exclamation-triangle' : 'exclamation-circle';
+            
+            messageDiv.innerHTML = `<i class="fas fa-${icon}"></i> ${text}`;
+            messageDiv.className = type;
+            messageDiv.style.display = 'block';
+            
+            // Set styles based on type
+            switch(type) {
+                case 'error':
+                    messageDiv.style.cssText = `
+                        color: #721c24;
+                        background: #f8d7da;
+                        padding: 12px;
+                        border-radius: 6px;
+                        border: 1px solid #f5c6cb;
+                        margin: 15px 0;
+                        text-align: center;
+                        display: block;
+                    `;
+                    break;
+                case 'success':
+                    messageDiv.style.cssText = `
+                        color: #155724;
+                        background: #d4edda;
+                        padding: 12px;
+                        border-radius: 6px;
+                        border: 1px solid #c3e6cb;
+                        margin: 15px 0;
+                        text-align: center;
+                        display: block;
+                    `;
+                    break;
+                case 'warning':
+                    messageDiv.style.cssText = `
+                        color: #856404;
+                        background: #fff3cd;
+                        padding: 12px;
+                        border-radius: 6px;
+                        border: 1px solid #ffeaa7;
+                        margin: 15px 0;
+                        text-align: center;
+                        display: block;
+                    `;
+                    break;
+            }
+        }
+        
+        // Cek status GitHub saat page load
+        async function checkGitHubStatus() {
+            try {
+                const response = await fetch(
+                    `https://raw.githubusercontent.com/${GITHUB_REPO}/main/${USERS_DB_FILE}`
+                );
+                
+                if (response.ok) {
+                    console.log('✅ GitHub database accessible');
+                    
+                    // Tampilkan info kecil di UI
+                    const infoBox = document.querySelector('.info-box');
+                    if (infoBox) {
+                        infoBox.innerHTML += `<br><small><i class="fas fa-cloud"></i> Database terhubung ke GitHub</small>`;
+                    }
+                }
+            } catch (error) {
+                console.log('ℹ️ GitHub check failed, using local data');
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Login page with GitHub integration loaded');
+            
+            // 1. Setup form dengan GitHub handler
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.removeEventListener('submit', handleLoginWithGitHub); // Remove if exists
+                loginForm.addEventListener('submit', handleLoginWithGitHub);
+            }
+            
+            // 2. Auto-check GitHub status
+            checkGitHubStatus();
+            
+            // 3. Auto-check jika ada parameter URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const nameParam = urlParams.get('name');
+            const codeParam = urlParams.get('code');
+            
+            if (nameParam) {
+                document.getElementById('username').value = decodeURIComponent(nameParam);
+                
+                // Auto-check jika ada code juga
+                if (codeParam) {
+                    document.getElementById('userCode').value = decodeURIComponent(codeParam);
+                    
+                    // Auto-submit setelah 500ms
+                    setTimeout(() => {
+                        if (document.getElementById('username').value && 
+                            document.getElementById('userCode').value) {
+                            console.log('Auto-submitting with URL parameters...');
+                            loginForm.dispatchEvent(new Event('submit'));
+                        }
+                    }, 500);
+                }
+            }
+            
+            // 4. Pre-load users dari GitHub di background
+            setTimeout(() => {
+                loadUsersFromGitHub().catch(() => {
+                    // Silent fail, sudah ada fallback
+                });
+            }, 1000);
+        });
+    </script>
 </head>
 <body>
     <div class="login-container">
@@ -25,7 +275,8 @@
                         <i class="fas fa-user"></i> Nama Anda
                     </label>
                     <input type="text" id="username" name="username" 
-                           placeholder="Masukkan nama lengkap sesuai registrasi" required>
+                           placeholder="Masukkan nama lengkap sesuai registrasi" required
+                           autocomplete="name">
                     <small>Nama harus sama dengan yang didaftarkan admin</small>
                 </div>
                 
@@ -34,7 +285,8 @@
                         <i class="fas fa-id-card"></i> Kode User (Opsional)
                     </label>
                     <input type="text" id="userCode" name="userCode" 
-                           placeholder="Masukkan kode jika ada">
+                           placeholder="Masukkan kode jika ada"
+                           autocomplete="off">
                     <small>Kode unik yang diberikan admin (jika ada)</small>
                 </div>
                 
@@ -48,88 +300,49 @@
                     <p>Belum terdaftar? Hubungi admin sekolah</p>
                     <p>Admin? <a href="admin-login.html">Masuk di sini</a></p>
                     <p><a href="index.html"><i class="fas fa-arrow-left"></i> Kembali ke Beranda</a></p>
+                    
+                    <!-- Status GitHub -->
+                    <div id="githubStatus" style="margin-top: 10px; font-size: 0.85rem; color: #666;">
+                        <i class="fas fa-cloud"></i> <span id="dbStatus">Loading database...</span>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
     
     <script>
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
+        // Update GitHub status UI
+        async function updateGitHubStatus() {
+            const statusEl = document.getElementById('dbStatus');
             
-            const username = document.getElementById('username').value.trim();
-            const userCode = document.getElementById('userCode').value.trim();
-            const messageDiv = document.getElementById('loginMessage');
-            
-            // Clear previous message
-            messageDiv.style.display = 'none';
-            messageDiv.className = '';
-            messageDiv.innerHTML = '';
-            
-            if (!username) {
-                showMessage('Silakan masukkan nama Anda', 'error');
-                return;
-            }
-            
-            // Cek di localStorage atau session
-            const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-            
-            // Cari user yang sesuai
-            const user = registeredUsers.find(u => 
-                u.name.toLowerCase() === username.toLowerCase() ||
-                (u.code && u.code === userCode)
-            );
-            
-            if (user) {
-                // User ditemukan, simpan session
-                localStorage.setItem('currentUser', username);
-                localStorage.setItem('currentUserId', user.id || username);
-                localStorage.setItem('userCode', user.code || '');
+            try {
+                const response = await fetch('https://raw.githubusercontent.com/sdngbr01-source/7kebiasaan-anak/main/user-database.son');
                 
-                showMessage('Login berhasil! Mengalihkan...', 'success');
-                
-                // Redirect setelah 1 detik
-                setTimeout(() => {
-                    window.location.href = 'dashboard.html';
-                }, 1000);
-            } else {
-                showMessage('Nama tidak terdaftar. Hubungi admin untuk registrasi.', 'error');
-            }
-        });
-        
-        function showMessage(text, type) {
-            const messageDiv = document.getElementById('loginMessage');
-            messageDiv.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${text}`;
-            messageDiv.className = type;
-            messageDiv.style.display = 'block';
-            
-            if (type === 'error') {
-                messageDiv.style.color = '#dc3545';
-                messageDiv.style.background = '#f8d7da';
-                messageDiv.style.padding = '10px';
-                messageDiv.style.borderRadius = '5px';
-                messageDiv.style.border = '1px solid #f5c6cb';
-            } else {
-                messageDiv.style.color = '#28a745';
-                messageDiv.style.background = '#d4edda';
-                messageDiv.style.padding = '10px';
-                messageDiv.style.borderRadius = '5px';
-                messageDiv.style.border = '1px solid #c3e6cb';
+                if (response.ok) {
+                    const data = await response.json();
+                    const users = data.registeredUsers || data.users || [];
+                    statusEl.innerHTML = `✅ ${users.length} users dari GitHub`;
+                    statusEl.style.color = '#28a745';
+                }
+            } catch (error) {
+                // Check local cache
+                const localUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+                if (localUsers.length > 0) {
+                    statusEl.innerHTML = `⚠️ ${localUsers.length} users dari cache`;
+                    statusEl.style.color = '#ffc107';
+                } else {
+                    statusEl.innerHTML = '❌ Database tidak tersedia';
+                    statusEl.style.color = '#dc3545';
+                }
             }
         }
         
-        // Auto-check jika ada parameter
+        // Update status on load
         document.addEventListener('DOMContentLoaded', function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const nameParam = urlParams.get('name');
-            const codeParam = urlParams.get('code');
+            updateGitHubStatus();
             
-            if (nameParam) {
-                document.getElementById('username').value = decodeURIComponent(nameParam);
-            }
-            if (codeParam) {
-                document.getElementById('userCode').value = decodeURIComponent(codeParam);
-            }
+            // Auto-update status setiap 30 detik
+            setInterval(updateGitHubStatus, 30000);
         });
     </script>
 </body>
