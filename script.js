@@ -379,4 +379,100 @@ document.addEventListener('DOMContentLoaded', function() {
             closeModal();
         }
     });
+
 });
+// =============================================
+// GITHUB DATABASE SYNC
+// =============================================
+
+const GITHUB_TOKEN = 'your_token_here';
+const REPO_OWNER = 'username';
+const REPO_NAME = '7kebiasaan-data';
+const DB_FILE = 'db.json';
+
+// Fungsi untuk sync data ke GitHub
+async function syncToGitHub() {
+    try {
+        // Get current data from localStorage
+        const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+        const habits = JSON.parse(localStorage.getItem('habitsData') || '[]');
+        
+        // Get current db.json from GitHub
+        const response = await fetch(
+            `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DB_FILE}`,
+            {
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            }
+        );
+        
+        let currentData = { users: [], habits: [] };
+        let sha = '';
+        
+        if (response.ok) {
+            const data = await response.json();
+            currentData = JSON.parse(atob(data.content));
+            sha = data.sha;
+        }
+        
+        // Merge data (prevent duplicates)
+        const mergedUsers = mergeArrays(currentData.users, users);
+        const mergedHabits = mergeArrays(currentData.habits, habits);
+        
+        // Save back to GitHub
+        const newData = {
+            users: mergedUsers,
+            habits: mergedHabits,
+            lastSync: new Date().toISOString()
+        };
+        
+        const updateResponse = await fetch(
+            `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DB_FILE}`,
+            {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: `Sync data ${new Date().toLocaleString()}`,
+                    content: btoa(JSON.stringify(newData, null, 2)),
+                    sha: sha
+                })
+            }
+        );
+        
+        if (updateResponse.ok) {
+            console.log('✅ Data synced to GitHub');
+            // Update localStorage dengan merged data
+            localStorage.setItem('registeredUsers', JSON.stringify(mergedUsers));
+            localStorage.setItem('habitsData', JSON.stringify(mergedHabits));
+        }
+        
+    } catch (error) {
+        console.error('Sync error:', error);
+    }
+}
+
+function mergeArrays(arr1, arr2) {
+    const merged = [...arr1];
+    const ids = new Set(arr1.map(item => item.id));
+    
+    arr2.forEach(item => {
+        if (!ids.has(item.id)) {
+            merged.push(item);
+            ids.add(item.id);
+        }
+    });
+    
+    return merged;
+}
+
+// Sync every 5 minutes
+setInterval(syncToGitHub, 5 * 60 * 1000);
+
+// Sync on page load
+document.addEventListener('DOMContentLoaded', syncToGitHub);
