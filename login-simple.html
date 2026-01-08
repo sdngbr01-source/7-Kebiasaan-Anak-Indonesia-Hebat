@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - 7 Kebiasaan Anak Indonesia Hebat</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #182848, #4b6cb7);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .login-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        
+        .logo {
+            margin-bottom: 30px;
+        }
+        
+        .logo-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #4b6cb7, #182848);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            color: white;
+            font-size: 2.5rem;
+            box-shadow: 0 8px 20px rgba(75, 108, 183, 0.3);
+        }
+        
+        h1 {
+            color: #182848;
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #182848;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5ee;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            background: #f8f9fa;
+        }
+        
+        .form-control:focus {
+            border-color: #4b6cb7;
+            outline: none;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(75, 108, 183, 0.1);
+        }
+        
+        .btn-login {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(to right, #4b6cb7, #182848);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(75, 108, 183, 0.3);
+        }
+        
+        .btn-login:active {
+            transform: translateY(-1px);
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            text-align: left;
+            font-size: 0.9rem;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .error-message.show {
+            display: block;
+        }
+        
+        .loading {
+            display: none;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4b6cb7;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .quick-login {
+            margin-top: 25px;
+        }
+        
+        .quick-login h3 {
+            color: #182848;
+            margin-bottom: 15px;
+            font-size: 1rem;
+        }
+        
+        .quick-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .quick-btn {
+            padding: 12px;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            color: #182848;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .quick-btn:hover {
+            background: #4b6cb7;
+            color: white;
+            border-color: #4b6cb7;
+        }
+        
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 30px 20px;
+            }
+            
+            .logo-icon {
+                width: 70px;
+                height: 70px;
+                font-size: 2rem;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-child"></i>
+                </div>
+                <h1>7 Kebiasaan Anak Hebat</h1>
+                <p class="subtitle">Masukkan nama Anda untuk mulai</p>
+            </div>
+            
+            <div class="error-message" id="errorMessage">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="errorText"></span>
+            </div>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="userName"><i class="fas fa-user"></i> Nama Anda</label>
+                    <input type="text" id="userName" class="form-control" 
+                           placeholder="Masukkan nama lengkap" required autofocus>
+                </div>
+                
+                <button type="submit" class="btn-login" id="loginButton">
+                    <i class="fas fa-sign-in-alt"></i> Masuk
+                </button>
+            </form>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 10px; color: #666;">Memuat...</p>
+            </div>
+            
+            <div class="quick-login">
+                <h3><i class="fas fa-bolt"></i> Login Cepat</h3>
+                <div class="quick-buttons" id="quickButtons">
+                    <!-- Quick login buttons will be added here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // SIMPLE LOGIN SYSTEM - NAMA SAJA
+        
+        // Daftar user yang sering login (akan disimpan di localStorage)
+        const defaultUsers = [
+            { name: "Ahmad Budi", avatar: "A" },
+            { name: "Siti Aminah", avatar: "S" },
+            { name: "Rina Sari", avatar: "R" },
+            { name: "Budi Santoso", avatar: "B" }
+        ];
+
+        // Inisialisasi
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("Simple login system loading...");
+            
+            // Load quick login buttons
+            loadQuickLoginButtons();
+            
+            // Setup form submission
+            setupLoginForm();
+            
+            // Check URL parameters for auto-login
+            checkUrlParameters();
+            
+            // Focus on input
+            document.getElementById('userName').focus();
+        });
+
+        // Load quick login buttons
+        function loadQuickLoginButtons() {
+            const quickButtonsDiv = document.getElementById('quickButtons');
+            
+            // Get recent logins from localStorage
+            const recentLogins = getRecentLogins();
+            
+            // Combine default users with recent logins
+            const allUsers = [...recentLogins, ...defaultUsers];
+            
+            // Remove duplicates
+            const uniqueUsers = Array.from(new Set(allUsers.map(u => u.name)))
+                .map(name => allUsers.find(u => u.name === name));
+            
+            // Show max 6 users
+            const usersToShow = uniqueUsers.slice(0, 6);
+            
+            if (usersToShow.length === 0) {
+                quickButtonsDiv.innerHTML = '<p style="color: #666; font-size: 0.9rem;">Belum ada user yang login</p>';
+                return;
+            }
+            
+            // Create quick login buttons
+            usersToShow.forEach(user => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'quick-btn';
+                button.innerHTML = `<i class="fas fa-user"></i> ${user.name}`;
+                button.onclick = () => loginWithName(user.name);
+                quickButtonsDiv.appendChild(button);
+            });
+        }
+
+        // Get recent logins from localStorage
+        function getRecentLogins() {
+            try {
+                const logins = JSON.parse(localStorage.getItem('recentLogins') || '[]');
+                return logins;
+            } catch (error) {
+                return [];
+            }
+        }
+
+        // Save recent login
+        function saveRecentLogin(userName) {
+            try {
+                let recentLogins = getRecentLogins();
+                
+                // Remove if already exists
+                recentLogins = recentLogins.filter(user => user.name !== userName);
+                
+                // Add to beginning
+                const avatar = userName.charAt(0).toUpperCase();
+                recentLogins.unshift({ name: userName, avatar: avatar });
+                
+                // Keep only last 10
+                recentLogins = recentLogins.slice(0, 10);
+                
+                localStorage.setItem('recentLogins', JSON.stringify(recentLogins));
+            } catch (error) {
+                console.error("Error saving recent login:", error);
+            }
+        }
+
+        // Setup login form
+        function setupLoginForm() {
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const userName = document.getElementById('userName').value.trim();
+                
+                if (!userName) {
+                    showError('Harap masukkan nama Anda');
+                    return;
+                }
+                
+                // Login dengan nama
+                loginWithName(userName);
+            });
+        }
+
+        // Login dengan nama
+        function loginWithName(userName) {
+            showLoading();
+            
+            // Simulate loading
+            setTimeout(() => {
+                // Save user to localStorage
+                saveUserToLocalStorage(userName);
+                
+                // Save to recent logins
+                saveRecentLogin(userName);
+                
+                // Save login time
+                localStorage.setItem('lastLogin', new Date().toISOString());
+                
+                hideLoading();
+                
+                // Redirect to dashboard
+                window.location.href = 'dashboard-simple.html';
+            }, 500);
+        }
+
+        // Save user to localStorage
+        function saveUserToLocalStorage(userName) {
+            const userData = {
+                id: 'USER_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                name: userName,
+                avatar: userName.charAt(0).toUpperCase(),
+                loginTime: new Date().toISOString(),
+                isActive: true
+            };
+            
+            localStorage.setItem('currentUser', JSON.stringify(userData));
+            localStorage.setItem('userLoggedIn', 'true');
+            
+            // Also save to registered users if not exists
+            saveToRegisteredUsers(userData);
+        }
+
+        // Save to registered users list
+        function saveToRegisteredUsers(userData) {
+            try {
+                let registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+                
+                // Check if user already exists
+                const exists = registeredUsers.some(user => user.name === userData.name);
+                
+                if (!exists) {
+                    // Add new user
+                    registeredUsers.push({
+                        id: userData.id,
+                        name: userData.name,
+                        class: '',
+                        code: generateUserCode(userData.name),
+                        notes: 'Auto-registered',
+                        createdAt: new Date().toISOString(),
+                        isActive: true
+                    });
+                    
+                    localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+                }
+            } catch (error) {
+                console.error("Error saving to registered users:", error);
+            }
+        }
+
+        // Generate user code
+        function generateUserCode(userName) {
+            const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
+            return initials + '_' + Math.floor(1000 + Math.random() * 9000);
+        }
+
+        // Check URL parameters
+        function checkUrlParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const name = urlParams.get('name');
+            
+            if (name) {
+                document.getElementById('userName').value = name;
+                // Auto login jika ada parameter name
+                loginWithName(name);
+            }
+        }
+
+        // Show error message
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            
+            errorText.textContent = message;
+            errorDiv.classList.add('show');
+            
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                errorDiv.classList.remove('show');
+            }, 5000);
+        }
+
+        // Show loading
+        function showLoading() {
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('loginButton').disabled = true;
+        }
+
+        // Hide loading
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('show');
+            document.getElementById('loginButton').disabled = false;
+        }
+    </script>
+</body>
+</html>
