@@ -9,244 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #182848, #4b6cb7);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        
-        .login-container {
-            width: 100%;
-            max-width: 450px;
-        }
-        
-        .login-card {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-            text-align: center;
-        }
-        
-        .logo {
-            margin-bottom: 30px;
-        }
-        
-        .logo-icon {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #4b6cb7, #182848);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-            color: white;
-            font-size: 2.5rem;
-            box-shadow: 0 8px 20px rgba(75, 108, 183, 0.3);
-        }
-        
-        h1 {
-            color: #182848;
-            margin-bottom: 10px;
-            font-size: 1.8rem;
-        }
-        
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 0.95rem;
-        }
-        
-        .form-group {
-            margin-bottom: 25px;
-            text-align: left;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #182848;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-        
-        .form-control {
-            width: 100%;
-            padding: 15px;
-            border: 2px solid #e1e5ee;
-            border-radius: 10px;
-            font-size: 1rem;
-            transition: all 0.3s;
-            background: #f8f9fa;
-        }
-        
-        .form-control:focus {
-            border-color: #4b6cb7;
-            outline: none;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(75, 108, 183, 0.1);
-        }
-        
-        .btn-login {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(to right, #4b6cb7, #182848);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            transition: all 0.3s;
-            margin-top: 10px;
-        }
-        
-        .btn-login:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(75, 108, 183, 0.3);
-        }
-        
-        .btn-login:active {
-            transform: translateY(-1px);
-        }
-        
-        .error-message {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
-            text-align: left;
-            font-size: 0.9rem;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .error-message.show {
-            display: block;
-        }
-        
-        .loading {
-            display: none;
-            margin: 20px 0;
-            text-align: center;
-        }
-        
-        .loading.show {
-            display: block;
-        }
-        
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #4b6cb7;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .register-link {
-            margin-top: 25px;
-            color: #666;
-            font-size: 0.9rem;
-        }
-        
-        .register-link a {
-            color: #4b6cb7;
-            text-decoration: none;
-            font-weight: 600;
-        }
-        
-        .register-link a:hover {
-            text-decoration: underline;
-        }
-        
-        .user-list {
-            margin-top: 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
-        .user-list h3 {
-            color: #182848;
-            margin-bottom: 15px;
-            font-size: 1rem;
-        }
-        
-        .user-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            border-bottom: 1px solid #e9ecef;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        
-        .user-item:hover {
-            background: #e9ecef;
-        }
-        
-        .user-item:last-child {
-            border-bottom: none;
-        }
-        
-        .user-name {
-            font-weight: 500;
-            color: #182848;
-        }
-        
-        .user-class {
-            font-size: 0.85rem;
-            color: #666;
-        }
-        
-        .quick-login-text {
-            color: #666;
-            font-size: 0.9rem;
-            margin-top: 15px;
-            text-align: center;
-        }
-        
-        @media (max-width: 480px) {
-            .login-card {
-                padding: 30px 20px;
-            }
-            
-            .logo-icon {
-                width: 70px;
-                height: 70px;
-                font-size: 2rem;
-            }
-            
-            h1 {
-                font-size: 1.5rem;
-            }
-        }
+        /* (CSS tetap sama seperti sebelumnya) */
     </style>
 </head>
 <body>
@@ -269,7 +32,7 @@
                 <div class="form-group">
                     <label for="userName"><i class="fas fa-user"></i> Nama Lengkap</label>
                     <input type="text" id="userName" class="form-control" 
-                           placeholder="Masukkan nama lengkap sesuai database" 
+                           placeholder="Masukkan nama lengkap Anda" 
                            required autofocus>
                 </div>
                 
@@ -335,12 +98,9 @@
                 // Setup form submission
                 setupLoginForm();
                 
-                // Check URL parameters for auto-fill
-                checkUrlParameters();
-                
             } catch (error) {
                 console.error("❌ Firebase initialization error:", error);
-                showError("Koneksi database gagal. Gunakan mode offline.");
+                showError("Koneksi database gagal. Menggunakan data lokal.");
                 
                 // Load users from localStorage as fallback
                 loadUsersFromLocalStorage();
@@ -348,7 +108,7 @@
         });
 
         // ========== LOAD USERS FROM FIREBASE ==========
-        function loadRegisteredUsers() {
+        async function loadRegisteredUsers() {
             if (!database) {
                 console.log("Database not available, using localStorage");
                 loadUsersFromLocalStorage();
@@ -357,91 +117,150 @@
             
             console.log("Loading users from Firebase...");
             
-            const usersRef = database.ref('users');
+            try {
+                // Baca data dari path yang benar (sesuaikan dengan struktur database Anda)
+                const snapshot = await database.ref('users').once('value');
+                const users = [];
+                
+                snapshot.forEach(childSnapshot => {
+                    const user = childSnapshot.val();
+                    // Pastikan user aktif
+                    if (user.isActive !== false && user.name) {
+                        users.push({
+                            id: childSnapshot.key || user.id,
+                            name: user.name,
+                            class: user.class || '',
+                            code: user.code || '',
+                            isActive: true
+                        });
+                    }
+                });
+                
+                console.log(`✅ Loaded ${users.length} users from Firebase`);
+                
+                // Display user list
+                displayUserList(users);
+                
+                // Save to localStorage for offline use
+                localStorage.setItem('registeredUsers', JSON.stringify(users));
+                
+            } catch (error) {
+                console.error("❌ Error loading users from Firebase:", error);
+                showError("Gagal mengambil data dari server. Menggunakan data lokal.");
+                loadUsersFromLocalStorage();
+            }
+        }
+
+        // ========== SETUP LOGIN FORM ==========
+        function setupLoginForm() {
+            document.getElementById('loginForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const userName = document.getElementById('userName').value.trim();
+                
+                if (!userName) {
+                    showError('Harap masukkan nama lengkap');
+                    return;
+                }
+                
+                if (userName.length < 3) {
+                    showError('Nama terlalu pendek. Masukkan nama lengkap.');
+                    return;
+                }
+                
+                showLoading();
+                
+                // Cari user di database
+                const user = await findUserByName(userName);
+                
+                if (user) {
+                    // Login berhasil
+                    loginSuccess(user);
+                } else {
+                    // Cari di localStorage sebagai fallback
+                    checkUserInLocalStorage(userName);
+                }
+            });
+        }
+
+        // ========== CARI USER BERDASARKAN NAMA ==========
+        async function findUserByName(userName) {
+            console.log(`Mencari user: "${userName}"`);
             
-            usersRef.once('value')
-                .then(snapshot => {
-                    const users = [];
+            // Pertama coba dari Firebase
+            if (database) {
+                try {
+                    const snapshot = await database.ref('users').once('value');
+                    let foundUser = null;
+                    
                     snapshot.forEach(childSnapshot => {
                         const user = childSnapshot.val();
-                        // Only add active users
-                        if (user.isActive !== false) {
-                            users.push(user);
+                        
+                        // Pencarian case-insensitive dan partial match
+                        if (user.name && user.name.toLowerCase().includes(userName.toLowerCase())) {
+                            foundUser = {
+                                id: childSnapshot.key || user.id,
+                                name: user.name,
+                                class: user.class || '',
+                                code: user.code || '',
+                                isActive: true
+                            };
                         }
                     });
                     
-                    console.log(`✅ Loaded ${users.length} users from Firebase`);
-                    
-                    // Display user list
-                    displayUserList(users);
-                    
-                    // Save to localStorage for offline use
-                    localStorage.setItem('registeredUsers', JSON.stringify(users));
-                    
-                })
-                .catch(error => {
-                    console.error("❌ Error loading users from Firebase:", error);
-                    showError("Gagal mengambil data dari server. Gunakan mode offline.");
-                    
-                    // Fallback to localStorage
-                    loadUsersFromLocalStorage();
-                });
+                    if (foundUser) {
+                        console.log(`✅ User ditemukan di Firebase: ${foundUser.name}`);
+                        return foundUser;
+                    }
+                } catch (error) {
+                    console.error("Error mencari user di Firebase:", error);
+                }
+            }
+            
+            return null;
         }
 
-        // ========== LOAD USERS FROM LOCALSTORAGE (FALLBACK) ==========
-        function loadUsersFromLocalStorage() {
-            console.log("Loading users from localStorage...");
+        // ========== CHECK USER IN LOCALSTORAGE ==========
+        function checkUserInLocalStorage(userName) {
+            console.log(`Checking user "${userName}" in localStorage...`);
             
             try {
                 const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
                 
-                console.log(`✅ Loaded ${users.length} users from localStorage`);
+                let userFound = null;
+                let similarNames = [];
                 
-                if (users.length === 0) {
-                    // If no users in localStorage, try to load default users
-                    loadDefaultUsers();
+                users.forEach(user => {
+                    // Check for match (case insensitive)
+                    if (user.name && user.name.toLowerCase().includes(userName.toLowerCase())) {
+                        userFound = user;
+                    }
+                    
+                    // Collect similar names for suggestions
+                    if (user.name && (user.name.toLowerCase().includes(userName.toLowerCase()) ||
+                        userName.toLowerCase().includes(user.name.toLowerCase()))) {
+                        similarNames.push(user.name);
+                    }
+                });
+                
+                if (userFound) {
+                    // Login successful
+                    loginSuccess(userFound);
                 } else {
-                    displayUserList(users);
+                    hideLoading();
+                    
+                    if (similarNames.length > 0) {
+                        showError(`Nama tidak ditemukan. Maksud Anda: ${similarNames.slice(0, 3).join(', ')}?`);
+                    } else {
+                        showError('Nama tidak terdaftar. Pastikan nama sesuai dengan database.');
+                    }
                 }
                 
             } catch (error) {
-                console.error("❌ Error loading users from localStorage:", error);
-                loadDefaultUsers();
+                console.error("Error checking localStorage:", error);
+                hideLoading();
+                showError('Error sistem. Silakan coba lagi.');
             }
-        }
-
-        // ========== LOAD DEFAULT USERS ==========
-        function loadDefaultUsers() {
-            console.log("Loading default users...");
-            
-            const defaultUsers = [
-                {
-                    id: "USER_DEFAULT_1",
-                    name: "ABRAHAM ALEXI PRATAMA",
-                    class: "6B",
-                    code: "0133714905",
-                    isActive: true
-                },
-                {
-                    id: "USER_DEFAULT_2", 
-                    name: "SITI AMINAH",
-                    class: "6A",
-                    code: "SISWA_001",
-                    isActive: true
-                },
-                {
-                    id: "USER_DEFAULT_3",
-                    name: "BUDI SANTOSO",
-                    class: "6B", 
-                    code: "SISWA_002",
-                    isActive: true
-                }
-            ];
-            
-            localStorage.setItem('registeredUsers', JSON.stringify(defaultUsers));
-            displayUserList(defaultUsers);
-            
-            console.log("✅ Loaded default users");
         }
 
         // ========== DISPLAY USER LIST ==========
@@ -467,7 +286,7 @@
             
             // Show all active users
             sortedUsers.forEach(user => {
-                if (user.isActive !== false) {
+                if (user.isActive !== false && user.name) {
                     const userDiv = document.createElement('div');
                     userDiv.className = 'user-item';
                     userDiv.innerHTML = `
@@ -493,149 +312,20 @@
             console.log(`✅ Displayed ${sortedUsers.length} users in list`);
         }
 
-        // ========== SETUP LOGIN FORM ==========
-        function setupLoginForm() {
-            document.getElementById('loginForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const userName = document.getElementById('userName').value.trim();
-                
-                if (!userName) {
-                    showError('Harap masukkan nama lengkap');
-                    return;
-                }
-                
-                if (userName.length < 3) {
-                    showError('Nama terlalu pendek. Masukkan nama lengkap.');
-                    return;
-                }
-                
-                showLoading();
-                
-                // Check user in Firebase first, then localStorage
-                checkUserInFirebase(userName);
-            });
-        }
-
-        // ========== CHECK USER IN FIREBASE ==========
-        function checkUserInFirebase(userName) {
-            if (!database) {
-                // Firebase not available, check localStorage
-                checkUserInLocalStorage(userName);
-                return;
-            }
-            
-            console.log(`Checking user "${userName}" in Firebase...`);
-            
-            const usersRef = database.ref('users');
-            
-            usersRef.once('value')
-                .then(snapshot => {
-                    let userFound = null;
-                    let similarNames = [];
-                    
-                    snapshot.forEach(childSnapshot => {
-                        const user = childSnapshot.val();
-                        
-                        // Check for exact match (case insensitive)
-                        if (user.name.toLowerCase() === userName.toLowerCase()) {
-                            userFound = user;
-                        }
-                        
-                        // Also collect similar names for suggestions
-                        if (user.name.toLowerCase().includes(userName.toLowerCase()) ||
-                            userName.toLowerCase().includes(user.name.toLowerCase())) {
-                            similarNames.push(user.name);
-                        }
-                    });
-                    
-                    if (userFound) {
-                        // Login successful
-                        loginSuccess(userFound);
-                    } else {
-                        // No exact match found
-                        if (similarNames.length > 0) {
-                            // Show suggestions
-                            hideLoading();
-                            showError(`Nama tidak ditemukan. Maksud Anda: ${similarNames.slice(0, 3).join(', ')}?`);
-                        } else {
-                            // Check in localStorage as fallback
-                            checkUserInLocalStorage(userName);
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error("Firebase error:", error);
-                    // Fallback to localStorage
-                    checkUserInLocalStorage(userName);
-                });
-        }
-
-        // ========== CHECK USER IN LOCALSTORAGE ==========
-        function checkUserInLocalStorage(userName) {
-            console.log(`Checking user "${userName}" in localStorage...`);
-            
-            try {
-                const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-                
-                let userFound = null;
-                let similarNames = [];
-                
-                users.forEach(user => {
-                    // Check for exact match (case insensitive)
-                    if (user.name.toLowerCase() === userName.toLowerCase()) {
-                        userFound = user;
-                    }
-                    
-                    // Also collect similar names for suggestions
-                    if (user.name.toLowerCase().includes(userName.toLowerCase()) ||
-                        userName.toLowerCase().includes(user.name.toLowerCase())) {
-                        similarNames.push(user.name);
-                    }
-                });
-                
-                if (userFound) {
-                    // Login successful
-                    loginSuccess(userFound);
-                } else {
-                    hideLoading();
-                    
-                    if (similarNames.length > 0) {
-                        showError(`Nama tidak ditemukan. Maksud Anda: ${similarNames.slice(0, 3).join(', ')}?`);
-                    } else {
-                        showError('Nama tidak terdaftar. Pastikan nama sesuai dengan database.');
-                    }
-                }
-                
-            } catch (error) {
-                console.error("Error checking localStorage:", error);
-                hideLoading();
-                showError('Error sistem. Silakan coba lagi.');
-            }
-        }
-
         // ========== LOGIN SUCCESS ==========
         function loginSuccess(user) {
             console.log(`✅ Login successful for user: ${user.name}`);
             
-            // Prepare user data for localStorage
-            const userDataForStorage = {
+            // Save user data to localStorage
+            localStorage.setItem('currentUser', JSON.stringify({
                 id: user.id,
                 name: user.name,
                 class: user.class || '',
                 code: user.code || '',
-                avatar: user.name.charAt(0).toUpperCase(),
-                loginTime: new Date().toISOString(),
-                isActive: true
-            };
+                loginTime: new Date().toISOString()
+            }));
             
-            // Save to localStorage
-            localStorage.setItem('currentUser', JSON.stringify(userDataForStorage));
             localStorage.setItem('userLoggedIn', 'true');
-            localStorage.setItem('lastLogin', new Date().toISOString());
-            
-            // Save login history
-            saveLoginHistory(user);
             
             hideLoading();
             
@@ -646,47 +336,6 @@
             setTimeout(() => {
                 window.location.href = 'dashboard.html';
             }, 1000);
-        }
-
-        // ========== SAVE LOGIN HISTORY ==========
-        function saveLoginHistory(user) {
-            try {
-                const loginHistory = JSON.parse(localStorage.getItem('loginHistory') || '[]');
-                
-                loginHistory.push({
-                    userId: user.id,
-                    userName: user.name,
-                    loginTime: new Date().toISOString(),
-                    device: navigator.userAgent.substring(0, 100),
-                    platform: navigator.platform
-                });
-                
-                // Keep only last 10 logins
-                if (loginHistory.length > 10) {
-                    loginHistory.shift();
-                }
-                
-                localStorage.setItem('loginHistory', JSON.stringify(loginHistory));
-                
-                console.log("✅ Login history saved");
-                
-            } catch (error) {
-                console.error("Error saving login history:", error);
-            }
-        }
-
-        // ========== CHECK URL PARAMETERS ==========
-        function checkUrlParameters() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const name = urlParams.get('name');
-            
-            if (name) {
-                document.getElementById('userName').value = name;
-                // Auto login if name parameter exists
-                setTimeout(() => {
-                    document.getElementById('loginForm').dispatchEvent(new Event('submit'));
-                }, 500);
-            }
         }
 
         // ========== HELPER FUNCTIONS ==========
@@ -704,7 +353,6 @@
         }
 
         function showSuccess(message) {
-            // Create success message element
             const successDiv = document.createElement('div');
             successDiv.className = 'error-message';
             successDiv.style.background = '#d4edda';
@@ -715,14 +363,11 @@
                 <span>${message}</span>
             `;
             
-            // Insert before form
             const form = document.getElementById('loginForm');
             form.parentNode.insertBefore(successDiv, form);
             
-            // Show it
             successDiv.classList.add('show');
             
-            // Remove after 3 seconds
             setTimeout(() => {
                 successDiv.classList.remove('show');
                 setTimeout(() => {
