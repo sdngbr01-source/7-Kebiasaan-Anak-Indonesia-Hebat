@@ -187,7 +187,7 @@
             background: #f8f9fa;
             border-radius: 10px;
             padding: 20px;
-            max-height: 200px;
+            max-height: 300px;
             overflow-y: auto;
         }
         
@@ -203,6 +203,12 @@
             align-items: center;
             padding: 10px;
             border-bottom: 1px solid #e9ecef;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .user-item:hover {
+            background: #e9ecef;
         }
         
         .user-item:last-child {
@@ -214,12 +220,16 @@
             color: #182848;
         }
         
-        .user-code {
+        .user-class {
             font-size: 0.85rem;
             color: #666;
-            background: #e9ecef;
-            padding: 4px 8px;
-            border-radius: 4px;
+        }
+        
+        .quick-login-text {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 15px;
+            text-align: center;
         }
         
         @media (max-width: 480px) {
@@ -247,7 +257,7 @@
                     <i class="fas fa-child"></i>
                 </div>
                 <h1>7 Kebiasaan Anak Hebat</h1>
-                <p class="subtitle">Masukkan nama dan kode untuk melanjutkan</p>
+                <p class="subtitle">Masukkan nama Anda untuk melanjutkan</p>
             </div>
             
             <div class="error-message" id="errorMessage">
@@ -259,16 +269,8 @@
                 <div class="form-group">
                     <label for="userName"><i class="fas fa-user"></i> Nama Lengkap</label>
                     <input type="text" id="userName" class="form-control" 
-                           placeholder="Masukkan nama lengkap" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="userCode"><i class="fas fa-key"></i> Kode User</label>
-                    <input type="text" id="userCode" class="form-control" 
-                           placeholder="Masukkan kode user" required>
-                    <small style="color: #666; font-size: 0.85rem; margin-top: 5px; display: block;">
-                        Kode diberikan oleh admin. Contoh: AB_2024
-                    </small>
+                           placeholder="Masukkan nama lengkap sesuai database" 
+                           required autofocus>
                 </div>
                 
                 <button type="submit" class="btn-login" id="loginButton">
@@ -281,21 +283,25 @@
                 <p style="margin-top: 10px; color: #666;">Memeriksa data...</p>
             </div>
             
+            <p class="quick-login-text">
+                <i class="fas fa-lightbulb"></i> Klik nama di bawah untuk login cepat
+            </p>
+            
             <div class="user-list" id="userList">
-                <h3><i class="fas fa-users"></i> Daftar User Terdaftar</h3>
+                <h3><i class="fas fa-users"></i> Daftar Siswa Terdaftar</h3>
                 <div id="userListContent">
                     <!-- Daftar user akan diisi oleh JavaScript -->
                 </div>
             </div>
             
             <div class="register-link">
-                Belum terdaftar? Hubungi admin untuk mendapatkan kode.
+                Jika nama tidak ditemukan, hubungi guru/administrator.
             </div>
         </div>
     </div>
 
     <script>
-        // Firebase Configuration
+        // ========== FIREBASE CONFIGURATION ==========
         const firebaseConfig = {
             apiKey: "AIzaSyD5eyduaLigPJGqKYQJAZFZx3xvdm-l7s0",
             authDomain: "kaih-2bea0.firebaseapp.com",
@@ -310,27 +316,47 @@
         let firebaseApp, database;
         
         document.addEventListener('DOMContentLoaded', function() {
+            console.log("Login page initializing...");
+            
             try {
                 if (!firebase.apps.length) {
                     firebaseApp = firebase.initializeApp(firebaseConfig);
+                    console.log("✅ Firebase initialized successfully");
                 } else {
                     firebaseApp = firebase.app();
+                    console.log("✅ Firebase already initialized");
                 }
                 
                 database = firebase.database();
-                console.log("✅ Firebase initialized for login");
                 
                 // Load registered users from Firebase
                 loadRegisteredUsers();
                 
+                // Setup form submission
+                setupLoginForm();
+                
+                // Check URL parameters for auto-fill
+                checkUrlParameters();
+                
             } catch (error) {
-                console.error("❌ Firebase init error:", error);
-                showError("Koneksi database gagal. Coba lagi nanti.");
+                console.error("❌ Firebase initialization error:", error);
+                showError("Koneksi database gagal. Gunakan mode offline.");
+                
+                // Load users from localStorage as fallback
+                loadUsersFromLocalStorage();
             }
         });
 
-        // Load registered users from Firebase
+        // ========== LOAD USERS FROM FIREBASE ==========
         function loadRegisteredUsers() {
+            if (!database) {
+                console.log("Database not available, using localStorage");
+                loadUsersFromLocalStorage();
+                return;
+            }
+            
+            console.log("Loading users from Firebase...");
+            
             const usersRef = database.ref('users');
             
             usersRef.once('value')
@@ -338,20 +364,87 @@
                     const users = [];
                     snapshot.forEach(childSnapshot => {
                         const user = childSnapshot.val();
-                        users.push(user);
+                        // Only add active users
+                        if (user.isActive !== false) {
+                            users.push(user);
+                        }
                     });
                     
+                    console.log(`✅ Loaded ${users.length} users from Firebase`);
+                    
+                    // Display user list
                     displayUserList(users);
+                    
+                    // Save to localStorage for offline use
+                    localStorage.setItem('registeredUsers', JSON.stringify(users));
+                    
                 })
                 .catch(error => {
-                    console.error("Error loading users:", error);
-                    // Fallback to localStorage if Firebase fails
-                    const localUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-                    displayUserList(localUsers);
+                    console.error("❌ Error loading users from Firebase:", error);
+                    showError("Gagal mengambil data dari server. Gunakan mode offline.");
+                    
+                    // Fallback to localStorage
+                    loadUsersFromLocalStorage();
                 });
         }
 
-        // Display user list
+        // ========== LOAD USERS FROM LOCALSTORAGE (FALLBACK) ==========
+        function loadUsersFromLocalStorage() {
+            console.log("Loading users from localStorage...");
+            
+            try {
+                const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+                
+                console.log(`✅ Loaded ${users.length} users from localStorage`);
+                
+                if (users.length === 0) {
+                    // If no users in localStorage, try to load default users
+                    loadDefaultUsers();
+                } else {
+                    displayUserList(users);
+                }
+                
+            } catch (error) {
+                console.error("❌ Error loading users from localStorage:", error);
+                loadDefaultUsers();
+            }
+        }
+
+        // ========== LOAD DEFAULT USERS ==========
+        function loadDefaultUsers() {
+            console.log("Loading default users...");
+            
+            const defaultUsers = [
+                {
+                    id: "USER_DEFAULT_1",
+                    name: "ABRAHAM ALEXI PRATAMA",
+                    class: "6B",
+                    code: "0133714905",
+                    isActive: true
+                },
+                {
+                    id: "USER_DEFAULT_2", 
+                    name: "SITI AMINAH",
+                    class: "6A",
+                    code: "SISWA_001",
+                    isActive: true
+                },
+                {
+                    id: "USER_DEFAULT_3",
+                    name: "BUDI SANTOSO",
+                    class: "6B", 
+                    code: "SISWA_002",
+                    isActive: true
+                }
+            ];
+            
+            localStorage.setItem('registeredUsers', JSON.stringify(defaultUsers));
+            displayUserList(defaultUsers);
+            
+            console.log("✅ Loaded default users");
+        }
+
+        // ========== DISPLAY USER LIST ==========
         function displayUserList(users) {
             const userListContent = document.getElementById('userListContent');
             
@@ -359,7 +452,7 @@
                 userListContent.innerHTML = `
                     <div style="text-align: center; color: #999; padding: 20px;">
                         <i class="fas fa-user-slash" style="font-size: 2rem; margin-bottom: 10px;"></i>
-                        <p>Belum ada user terdaftar</p>
+                        <p>Belum ada siswa terdaftar</p>
                     </div>
                 `;
                 return;
@@ -367,33 +460,236 @@
             
             userListContent.innerHTML = '';
             
-            // Show only active users, max 10
-            const activeUsers = users.filter(user => user.isActive !== false).slice(0, 10);
+            // Sort users by name
+            const sortedUsers = users.sort((a, b) => 
+                a.name.localeCompare(b.name)
+            );
             
-            activeUsers.forEach(user => {
-                const userDiv = document.createElement('div');
-                userDiv.className = 'user-item';
-                userDiv.innerHTML = `
-                    <div>
-                        <div class="user-name">${user.name}</div>
-                        <div style="font-size: 0.8rem; color: #888;">${user.class || ''}</div>
-                    </div>
-                    <div class="user-code">${user.code || '-'}</div>
-                `;
-                userListContent.appendChild(userDiv);
+            // Show all active users
+            sortedUsers.forEach(user => {
+                if (user.isActive !== false) {
+                    const userDiv = document.createElement('div');
+                    userDiv.className = 'user-item';
+                    userDiv.innerHTML = `
+                        <div>
+                            <div class="user-name">${user.name}</div>
+                            <div class="user-class">${user.class || 'Kelas: -'}</div>
+                        </div>
+                        <div style="color: #4b6cb7;">
+                            <i class="fas fa-chevron-right"></i>
+                        </div>
+                    `;
+                    
+                    // Add click event for quick login
+                    userDiv.onclick = () => {
+                        document.getElementById('userName').value = user.name;
+                        document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+                    };
+                    
+                    userListContent.appendChild(userDiv);
+                }
             });
             
-            if (users.length > 10) {
-                const moreDiv = document.createElement('div');
-                moreDiv.style.textAlign = 'center';
-                moreDiv.style.padding = '10px';
-                moreDiv.style.color = '#666';
-                moreDiv.innerHTML = `<i>dan ${users.length - 10} user lainnya...</i>`;
-                userListContent.appendChild(moreDiv);
+            console.log(`✅ Displayed ${sortedUsers.length} users in list`);
+        }
+
+        // ========== SETUP LOGIN FORM ==========
+        function setupLoginForm() {
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const userName = document.getElementById('userName').value.trim();
+                
+                if (!userName) {
+                    showError('Harap masukkan nama lengkap');
+                    return;
+                }
+                
+                if (userName.length < 3) {
+                    showError('Nama terlalu pendek. Masukkan nama lengkap.');
+                    return;
+                }
+                
+                showLoading();
+                
+                // Check user in Firebase first, then localStorage
+                checkUserInFirebase(userName);
+            });
+        }
+
+        // ========== CHECK USER IN FIREBASE ==========
+        function checkUserInFirebase(userName) {
+            if (!database) {
+                // Firebase not available, check localStorage
+                checkUserInLocalStorage(userName);
+                return;
+            }
+            
+            console.log(`Checking user "${userName}" in Firebase...`);
+            
+            const usersRef = database.ref('users');
+            
+            usersRef.once('value')
+                .then(snapshot => {
+                    let userFound = null;
+                    let similarNames = [];
+                    
+                    snapshot.forEach(childSnapshot => {
+                        const user = childSnapshot.val();
+                        
+                        // Check for exact match (case insensitive)
+                        if (user.name.toLowerCase() === userName.toLowerCase()) {
+                            userFound = user;
+                        }
+                        
+                        // Also collect similar names for suggestions
+                        if (user.name.toLowerCase().includes(userName.toLowerCase()) ||
+                            userName.toLowerCase().includes(user.name.toLowerCase())) {
+                            similarNames.push(user.name);
+                        }
+                    });
+                    
+                    if (userFound) {
+                        // Login successful
+                        loginSuccess(userFound);
+                    } else {
+                        // No exact match found
+                        if (similarNames.length > 0) {
+                            // Show suggestions
+                            hideLoading();
+                            showError(`Nama tidak ditemukan. Maksud Anda: ${similarNames.slice(0, 3).join(', ')}?`);
+                        } else {
+                            // Check in localStorage as fallback
+                            checkUserInLocalStorage(userName);
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error("Firebase error:", error);
+                    // Fallback to localStorage
+                    checkUserInLocalStorage(userName);
+                });
+        }
+
+        // ========== CHECK USER IN LOCALSTORAGE ==========
+        function checkUserInLocalStorage(userName) {
+            console.log(`Checking user "${userName}" in localStorage...`);
+            
+            try {
+                const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+                
+                let userFound = null;
+                let similarNames = [];
+                
+                users.forEach(user => {
+                    // Check for exact match (case insensitive)
+                    if (user.name.toLowerCase() === userName.toLowerCase()) {
+                        userFound = user;
+                    }
+                    
+                    // Also collect similar names for suggestions
+                    if (user.name.toLowerCase().includes(userName.toLowerCase()) ||
+                        userName.toLowerCase().includes(user.name.toLowerCase())) {
+                        similarNames.push(user.name);
+                    }
+                });
+                
+                if (userFound) {
+                    // Login successful
+                    loginSuccess(userFound);
+                } else {
+                    hideLoading();
+                    
+                    if (similarNames.length > 0) {
+                        showError(`Nama tidak ditemukan. Maksud Anda: ${similarNames.slice(0, 3).join(', ')}?`);
+                    } else {
+                        showError('Nama tidak terdaftar. Pastikan nama sesuai dengan database.');
+                    }
+                }
+                
+            } catch (error) {
+                console.error("Error checking localStorage:", error);
+                hideLoading();
+                showError('Error sistem. Silakan coba lagi.');
             }
         }
 
-        // Show error message
+        // ========== LOGIN SUCCESS ==========
+        function loginSuccess(user) {
+            console.log(`✅ Login successful for user: ${user.name}`);
+            
+            // Prepare user data for localStorage
+            const userDataForStorage = {
+                id: user.id,
+                name: user.name,
+                class: user.class || '',
+                code: user.code || '',
+                avatar: user.name.charAt(0).toUpperCase(),
+                loginTime: new Date().toISOString(),
+                isActive: true
+            };
+            
+            // Save to localStorage
+            localStorage.setItem('currentUser', JSON.stringify(userDataForStorage));
+            localStorage.setItem('userLoggedIn', 'true');
+            localStorage.setItem('lastLogin', new Date().toISOString());
+            
+            // Save login history
+            saveLoginHistory(user);
+            
+            hideLoading();
+            
+            // Show success message
+            showSuccess(`Selamat datang ${user.name}!`);
+            
+            // Redirect to dashboard after delay
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 1000);
+        }
+
+        // ========== SAVE LOGIN HISTORY ==========
+        function saveLoginHistory(user) {
+            try {
+                const loginHistory = JSON.parse(localStorage.getItem('loginHistory') || '[]');
+                
+                loginHistory.push({
+                    userId: user.id,
+                    userName: user.name,
+                    loginTime: new Date().toISOString(),
+                    device: navigator.userAgent.substring(0, 100),
+                    platform: navigator.platform
+                });
+                
+                // Keep only last 10 logins
+                if (loginHistory.length > 10) {
+                    loginHistory.shift();
+                }
+                
+                localStorage.setItem('loginHistory', JSON.stringify(loginHistory));
+                
+                console.log("✅ Login history saved");
+                
+            } catch (error) {
+                console.error("Error saving login history:", error);
+            }
+        }
+
+        // ========== CHECK URL PARAMETERS ==========
+        function checkUrlParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const name = urlParams.get('name');
+            
+            if (name) {
+                document.getElementById('userName').value = name;
+                // Auto login if name parameter exists
+                setTimeout(() => {
+                    document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+                }, 500);
+            }
+        }
+
+        // ========== HELPER FUNCTIONS ==========
         function showError(message) {
             const errorDiv = document.getElementById('errorMessage');
             const errorText = document.getElementById('errorText');
@@ -407,161 +703,53 @@
             }, 5000);
         }
 
-        // Show loading
+        function showSuccess(message) {
+            // Create success message element
+            const successDiv = document.createElement('div');
+            successDiv.className = 'error-message';
+            successDiv.style.background = '#d4edda';
+            successDiv.style.color = '#155724';
+            successDiv.style.borderColor = '#c3e6cb';
+            successDiv.innerHTML = `
+                <i class="fas fa-check-circle"></i>
+                <span>${message}</span>
+            `;
+            
+            // Insert before form
+            const form = document.getElementById('loginForm');
+            form.parentNode.insertBefore(successDiv, form);
+            
+            // Show it
+            successDiv.classList.add('show');
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                successDiv.classList.remove('show');
+                setTimeout(() => {
+                    if (successDiv.parentNode) {
+                        successDiv.parentNode.removeChild(successDiv);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
         function showLoading() {
             document.getElementById('loading').classList.add('show');
-            document.getElementById('loginButton').style.display = 'none';
+            document.getElementById('loginButton').disabled = true;
         }
 
-        // Hide loading
         function hideLoading() {
             document.getElementById('loading').classList.remove('show');
-            document.getElementById('loginButton').style.display = 'flex';
+            document.getElementById('loginButton').disabled = false;
         }
 
-        // Login form submission
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const userName = document.getElementById('userName').value.trim();
-            const userCode = document.getElementById('userCode').value.trim();
-            
-            if (!userName || !userCode) {
-                showError('Harap isi nama dan kode user');
-                return;
+        // ========== AUTO-FOCUS ON INPUT ==========
+        setTimeout(() => {
+            const userNameInput = document.getElementById('userName');
+            if (userNameInput) {
+                userNameInput.focus();
             }
-            
-            showLoading();
-            
-            // Check user in Firebase
-            checkUserInFirebase(userName, userCode);
-        });
-
-        // Check user in Firebase
-        function checkUserInFirebase(userName, userCode) {
-            const usersRef = database.ref('users');
-            
-            usersRef.once('value')
-                .then(snapshot => {
-                    let userFound = null;
-                    
-                    snapshot.forEach(childSnapshot => {
-                        const user = childSnapshot.val();
-                        
-                        // Check if user matches (case insensitive for name)
-                        if (user.name.toLowerCase() === userName.toLowerCase() && 
-                            user.code === userCode) {
-                            userFound = user;
-                        }
-                    });
-                    
-                    if (userFound) {
-                        // Login successful
-                        loginSuccess(userFound);
-                    } else {
-                        // Check in localStorage as fallback
-                        checkUserInLocalStorage(userName, userCode);
-                    }
-                })
-                .catch(error => {
-                    console.error("Firebase error:", error);
-                    // Fallback to localStorage
-                    checkUserInLocalStorage(userName, userCode);
-                });
-        }
-
-        // Check user in localStorage (fallback)
-        function checkUserInLocalStorage(userName, userCode) {
-            const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-            
-            const userFound = users.find(user => 
-                user.name.toLowerCase() === userName.toLowerCase() && 
-                user.code === userCode
-            );
-            
-            if (userFound) {
-                loginSuccess(userFound);
-            } else {
-                hideLoading();
-                showError('Nama atau kode user tidak terdaftar. Hubungi admin.');
-            }
-        }
-
-        // Login successful
-        function loginSuccess(user) {
-            // Save user data to localStorage
-            localStorage.setItem('currentUser', JSON.stringify(user));
-            localStorage.setItem('userLoggedIn', 'true');
-            localStorage.setItem('lastLogin', new Date().toISOString());
-            
-            // Save login history
-            saveLoginHistory(user);
-            
-            hideLoading();
-            
-            // Redirect to dashboard
-            setTimeout(() => {
-                window.location.href = 'dashboard.html';
-            }, 500);
-        }
-
-        // Save login history
-        function saveLoginHistory(user) {
-            try {
-                const loginHistory = JSON.parse(localStorage.getItem('loginHistory') || '[]');
-                
-                loginHistory.push({
-                    userId: user.id,
-                    userName: user.name,
-                    loginTime: new Date().toISOString(),
-                    device: navigator.userAgent,
-                    platform: navigator.platform
-                });
-                
-                // Keep only last 20 logins
-                if (loginHistory.length > 20) {
-                    loginHistory.shift();
-                }
-                
-                localStorage.setItem('loginHistory', JSON.stringify(loginHistory));
-                
-                // Also save to Firebase if available
-                if (database) {
-                    const historyRef = database.ref(`loginHistory/${user.id}/${Date.now()}`);
-                    historyRef.set({
-                        userName: user.name,
-                        loginTime: new Date().toISOString(),
-                        device: navigator.userAgent.substring(0, 100),
-                        platform: navigator.platform
-                    });
-                }
-                
-            } catch (error) {
-                console.error("Error saving login history:", error);
-            }
-        }
-
-        // Check URL parameters for auto-fill
-        function checkUrlParameters() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const name = urlParams.get('name');
-            const code = urlParams.get('code');
-            
-            if (name) {
-                document.getElementById('userName').value = name;
-            }
-            if (code) {
-                document.getElementById('userCode').value = code;
-            }
-            
-            // Auto login if both parameters exist
-            if (name && code) {
-                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
-            }
-        }
-
-        // Check URL parameters on load
-        checkUrlParameters();
+        }, 100);
     </script>
 </body>
 </html>
