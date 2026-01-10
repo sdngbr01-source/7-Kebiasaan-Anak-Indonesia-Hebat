@@ -4,12 +4,12 @@
 
 // ⚠️ GANTI DENGAN CONFIG DARI FIREBASE CONSOLE ⚠️
 const firebaseConfig = {
-   apiKey: "AIzaSyDMbpeTLhgD1doC0yk1luyJhnLvQ8C7i5U",
-  authDomain: "kaih-2.firebaseapp.com",
-  projectId: "kaih-2",
-  storageBucket: "kaih-2.firebasestorage.app",
-  messagingSenderId: "287927426712",
-  appId: "1:287927426712:web:87c0e518145f8cdae4faed"
+  apiKey: "AIzaSyCDmui8vy85LQDgh_LG1llsOxocQhD5JFo",
+  authDomain: "kebiasaan-indonesia.firebaseapp.com",
+  projectId: "kebiasaan-indonesia",
+  storageBucket: "kebiasaan-indonesia.firebasestorage.app",
+  messagingSenderId: "1083238000129",
+  appId: "1:1083238000129:web:b4aa1f596fbfc37c3a0200"
 };
 
 // ==============================================
