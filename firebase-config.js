@@ -5,13 +5,12 @@
 
 // ⚠️ GANTI dengan config dari STEP 5
 const firebaseConfig = {
-  apiKey: "AIzaSyD5eyduaLigPJGqKYQJAZFZx3xvdm-l7s0",
-  authDomain: "kaih-2bea0.firebaseapp.com",
-  databaseURL: "https://kaih-2bea0-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "kaih-2bea0",
-  storageBucket: "kaih-2bea0.firebasestorage.app",
-  messagingSenderId: "644778400874",
-  appId: "1:644778400874:web:979b195a6152e7ed87fe13"
+  apiKey: "AIzaSyCDmui8vy85LQDgh_LG1llsOxocQhD5JFo",
+  authDomain: "kebiasaan-indonesia.firebaseapp.com",
+  projectId: "kebiasaan-indonesia",
+  storageBucket: "kebiasaan-indonesia.firebasestorage.app",
+  messagingSenderId: "1083238000129",
+  appId: "1:1083238000129:web:b4aa1f596fbfc37c3a0200"
 };
 
 // Initialize Firebase
