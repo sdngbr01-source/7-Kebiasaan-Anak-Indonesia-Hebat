@@ -66,92 +66,34 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', async function() {
-            // Check authentication
-            if (!customAuth.isLoggedIn()) {
-                window.location.href = 'login.html';
-                return;
-            }
-
-            const user = customAuth.getCurrentUser();
-            document.getElementById('userGreeting').textContent = `Halo, ${user.nama}`;
-            document.getElementById('welcomeMessage').textContent = `Selamat datang, ${user.nama}!`;
-
-            // Initialize kebiasaan tracker
-            initializeTracker();
-            
-            // Load progress data
-            loadProgressData();
-        });
-
-        function initializeTracker() {
-            const trackerGrid = document.querySelector('.tracker-grid');
-            const kebiasaanList = [
-                { id: 1, name: 'Bangun Pagi', icon: 'fas fa-sun' },
-                { id: 2, name: 'Membaca Buku', icon: 'fas fa-book' },
-                { id: 3, name: 'Membantu Orang Tua', icon: 'fas fa-hands-helping' },
-                { id: 4, name: 'Makan Sehat', icon: 'fas fa-apple-alt' },
-                { id: 5, name: 'Olahraga', icon: 'fas fa-basketball-ball' },
-                { id: 6, name: 'Berdoa & Bersyukur', icon: 'fas fa-pray' },
-                { id: 7, name: 'Tidur Tepat Waktu', icon: 'fas fa-bed' }
-            ];
-
-            kebiasaanList.forEach(kebiasaan => {
-                const trackerItem = document.createElement('div');
-                trackerItem.className = 'tracker-item';
-                trackerItem.innerHTML = `
-                    <div class="tracker-icon">
-                        <i class="${kebiasaan.icon}"></i>
-                    </div>
-                    <h4>${kebiasaan.name}</h4>
-                    <div class="tracker-buttons">
-                        <button class="btn-success" onclick="markDone(${kebiasaan.id})">
-                            <i class="fas fa-check"></i> Sudah
-                        </button>
-                        <button class="btn-skip" onclick="markSkip(${kebiasaan.id})">
-                            <i class="fas fa-times"></i> Lewati
-                        </button>
-                    </div>
-                `;
-                trackerGrid.appendChild(trackerItem);
-            });
+    // Di dalam user.html, ganti script dengan ini:
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("User page loaded");
+        
+        // 1. CEK LOGIN
+        if (!SimpleAuth.isLoggedIn()) {
+            alert('Silakan login terlebih dahulu!');
+            window.location.href = 'login.html';
+            return;
         }
-
-        function markDone(kebiasaanId) {
-            alert(`Kebiasaan ${kebiasaanId} ditandai selesai!`);
-            // Save to database here
-        }
-
-        function markSkip(kebiasaanId) {
-            if (confirm('Yakin ingin melewati kebiasaan ini?')) {
-                // Save to database here
-            }
-        }
-
-        function loadProgressData() {
-            const ctx = document.getElementById('progressChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'],
-                    datasets: [{
-                        label: 'Kebiasaan Tercapai',
-                        data: [5, 7, 6, 7, 4, 6, 7],
-                        backgroundColor: '#4CAF50'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 7
-                        }
-                    }
-                }
-            });
-        }
-    </script>
+        
+        const currentUser = SimpleAuth.getCurrentUser();
+        console.log("User logged in:", currentUser);
+        
+        // 2. TAMPILKAN NAMA USER
+        document.getElementById('userGreeting').textContent = currentUser.nama;
+        document.getElementById('welcomeMessage').textContent = `Selamat datang, ${currentUser.nama}!`;
+        
+        // 3. INIT TRACKER
+        initializeTracker();
+        
+        console.log("User dashboard ready");
+    });
+    
+    function initializeTracker() {
+        // ... kode tracker seperti sebelumnya
+    }
+</script>
 </body>
 </html>
