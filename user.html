@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard User - 7 Kebiasaan</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <!-- Firebase Config -->
+    <script src="firebase-config.js"></script>
+    <style>
+        /* Additional Styles for User Dashboard */
+        .date-selector {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .habit-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 5px solid #4CAF50;
+        }
+        
+        .habit-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .habit-form {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .input-group input {
+            flex: 1;
+        }
+        
+        .history-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+        }
+        
+        .history-day {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #2196F3;
+        }
+        
+        .history-day h4 {
+            color: #2196F3;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .history-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            border-radius: 5px;
+            transition: width 0.3s;
+        }
+        
+        .save-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .save-btn:hover {
+            background: #45a049;
+        }
+        
+        .save-btn.saving {
+            background: #ff9800;
+        }
+        
+        .achievement-badge {
+            background: #FFD700;
+            color: #333;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <h1><i class="fas fa-user"></i> Dashboard Pengguna</h1>
+            <div class="nav-links">
+                <span id="userGreeting">Loading...</span>
+                <button onclick="logout()" class="btn-logout">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="user-container">
+        <!-- Welcome Section -->
+        <div class="user-welcome">
+            <h2 id="welcomeMessage">Selamat datang!</h2>
+            <p>Isi tracker 7 kebiasaan baik harian Anda</p>
+            
+            <!-- Date Selector -->
+            <div class="date-selector">
+                <div>
+                    <label for="selectedDate"><i class="fas fa-calendar-alt"></i> Pilih Tanggal:</label>
+                    <input type="date" id="selectedDate" style="margin-left: 10px; padding: 8px;">
+                </div>
+                <button onclick="loadToday()" class="btn-primary">
+                    <i class="fas fa-calendar-day"></i> Hari Ini
+                </button>
+                <button onclick="showHistory()" class="btn-admin">
+                    <i class="fas fa-history"></i> Lihat Riwayat
+                </button>
+                <span id="progressText" style="margin-left: auto; font-weight: bold;"></span>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- 7 Kebiasaan Tracker -->
+        <div class="kebiasaan-tracker">
+            <h3><i class="fas fa-chart-line"></i> Tracker 7 Kebiasaan Harian</h3>
+            <p id="currentDateDisplay" style="color: #666; margin-bottom: 20px;"></p>
+            
+            <!-- Kebiasaan 1: Bangun Pagi -->
+            <div class="habit-card" id="habit1">
+                <h3>1. Bangun Pagi <span id="badge1" class="achievement-badge" style="display: none;"><i class="fas fa-star"></i> Tercapai</span></h3>
+                <div class="habit-form">
+                    <div class="form-row">
+                        <label for="bangunPagi">Waktu Bangun:</label>
+                        <input type="time" id="bangunPagi" class="habit-input">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Kebiasaan 2: Rajin Beribadah -->
+            <div class="habit-card" id="habit2">
+                <h3>2. Rajin Beribadah dan Berdoa <span id="badge2" class="achievement-badge" style="display: none;"><i class="fas fa-star"></i> Tercapai</span></h3>
+                <div class="habit-form">
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="subuh" class="habit-checkbox" data-points="1">
+                            <label for="subuh">Sholat Subuh</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="doaSubuh" class="habit-checkbox" data-points="0.5">
+                            <label for="doaSubuh">Berdoa setelah Subuh</label>
+                        </div>
+                    </div>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="dzuhur" class="habit-checkbox" data-points="1">
+                            <label for="dzuhur">Sholat Dzuhur</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="doaDzuhur" class="habit-checkbox" data-points="0.5">
+                            <label for="doaDzuhur">Berdoa setelah Dzuhur</label>
+                        </div>
+                    </div>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="ashar" class="habit-checkbox" data-points="1">
+                            <label for="ashar">Sholat Ashar</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="doaAshar" class="habit-checkbox" data-points="0.5">
+                            <label for="doaAshar">Berdoa setelah Ashar</label>
+                        </div>
+                    </div>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="magrib" class="habit-checkbox" data-points="1">
+                            <label for="magrib">Sholat Magrib</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="doaMagrib" class="habit-checkbox" data-points="0.5">
+                            <label for="doaMagrib">Berdoa setelah Magrib</label>
+                        </div>
+                    </div>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="isya" class="habit-checkbox" data-points="1">
+                            <label for="isya">Sholat Isya</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="doaIsya" class="habit-checkbox" data-points="0.5">
+                            <label for="doaIsya">Berdoa setelah Isya</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Kebiasaan 3: Rajin Berolahraga -->
+            <div class="habit-card" id="habit3">
+                <h3>3. Rajin Berolahraga <span id="badge3" class="achievement-badge" style="display: none;"><i class="fas fa-star"></i> Tercapai</span></h3>
+                <div class="habit-form">
+                    <div class="form-row">
+                        <label for="olahragaWaktu">Waktu Olahraga:</label>
+                        <input type="time" id="olahragaWaktu" class="habit-input">
+                    </div>
+                    <div class="form-row">
+                        <label for="olahragaJenis">Jenis Olahraga:</label>
+                        <input type="text" id="olahragaJenis" class="habit-input" placeholder="Contoh: Lari, Sepak Bola, Renang">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Kebiasaan 4: Makan Teratur -->
+            <div class="habit-card" id="habit4">
+                <h3>4. Makan Teratur Sehat dan Bergizi <span id="badge4" class="achievement-badge" style="display: none;"><i class="fas fa-star"></i> Tercapai</span></h3>
+                <div class="habit-form">
+                    <div class="form-row">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="makanPagi" class="habit-checkbox">
+                            <label for="makanPagi">Makan Pagi</label>
+                        </div>
+                        <input type="text" id="menuPagi" class="habit-input" placeholder="Menu makan pagi" style="flex: 2;">
+                    </div>
+                    <div class="form-row">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="makanSiang" class="habit-checkbox">
+                            <label for="makanSiang">Makan Siang</label>
+                        </div>
+                        <input type="text" id="menuSiang" class="habit-input" placeholder="Menu makan siang" style="flex: 2;">
+                    </div>
+                    <div class="form-row">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="makanMalam" class="habit-checkbox">
+                            <label for="makanMalam">Makan Malam</label>
+                        </div>
+                        <input type="text" id="menuMalam" class="habit-input" placeholder="Menu makan malam" style="flex: 2;">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Kebiasaan 5: Gemar Belajar -->
+            <div class="habit-card" id="habit5">
+                <h3>5. Gemar Belajar <span id="badge5" class="achievement-badge" style="display: none;"><i class="fas fa-star"></i> Tercapai</span></h3>
+                <div class="habit-form">
+                    <div class="form-row">
+                        <label for="belajarWaktu">Waktu Belajar:</label>
+                        <input type="time" id="belajarWaktu" class="habit-input">
+                    </div>
+                    <div class="form-row">
+                        <label for="belajarMateri">Materi yang Dipelajari:</label>
+                        <textarea id="belajarMateri" class="habit-input" rows="3" placeholder="Apa yang dipelajari hari ini?"></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Kebiasaan 6: Bermasyarakat -->
+            <div class="habit-card" id="habit6">
+                <h3>6. Bermasyarakat <span id="badge6" class="achievement-badge" style="display: none;"><i class="fas fa-star"></i> Tercapai</span></h3>
+                <div class="habit-form">
+                    <div class="form-row">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="bantuOrangTua" class="habit-checkbox">
+                            <label for="bantuOrangTua">Membantu Pekerjaan Orang Tua</label>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <label for="halDibantu">Hal yang Dibantu:</label>
+                        <textarea id="halDibantu" class="habit-input" rows="3" placeholder="Jelaskan bantuan yang diberikan"></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Kebiasaan 7: Tidur Cepat -->
+            <div class="habit-card" id="habit7">
+                <h3>7. Tidur Cepat <span id="badge7" class="achievement-badge" style="display: none;"><i class="fas fa-star"></i> Tercapai</span></h3>
+                <div class="habit-form">
+                    <div class="form-row">
+                        <label for="tidurWaktu">Waktu Tidur:</label>
+                        <input type="time" id="tidurWaktu" class="habit-input">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Save Button -->
+            <div style="text-align: center; margin: 30px 0;">
+                <button onclick="saveDailyHabits()" class="save-btn" id="saveBtn">
+                    <i class="fas fa-save"></i> SIMPAN DATA HARIAN
+                </button>
+                <p style="color: #666; margin-top: 10px; font-size: 0.9rem;">
+                    <i class="fas fa-info-circle"></i> Data akan tersimpan di database dan bisa dilihat kembali kapan saja
+                </p>
+            </div>
+        </div>
+
+        <!-- History Section -->
+        <div class="history-section" id="historySection" style="display: none;">
+            <h3><i class="fas fa-history"></i> Riwayat Harian</h3>
+            <div id="historyList">
+                <!-- Riwayat akan dimuat di sini -->
+                <div style="text-align: center; padding: 40px; color: #666;">
+                    <i class="fas fa-history" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                    <p>Memuat riwayat...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tips Section -->
+        <div class="tips-section">
+            <h3><i class="fas fa-lightbulb"></i> Tips Hari Ini</h3>
+            <div class="tips-content">
+                <div class="tip-card">
+                    <i class="fas fa-sun"></i>
+                    <h4>Bangun Pagi</h4>
+                    <p>Bangun sebelum jam 5 pagi memberi waktu untuk persiapan hari yang lebih baik.</p>
+                </div>
+                <div class="tip-card">
+                    <i class="fas fa-pray"></i>
+                    <h4>Beribadah</h4>
+                    <p>Sholat tepat waktu menjaga disiplin dan ketenangan jiwa.</p>
+                </div>
+                <div class="tip-card">
+                    <i class="fas fa-apple-alt"></i>
+                    <h4>Makan Sehat</h4>
+                    <p>Sarapan bergizi meningkatkan konsentrasi belajar sepanjang hari.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==============================================
+        // USER DASHBOARD SCRIPT - 7 KEBIASAAN
+        // ==============================================
+        
+        let currentDate = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+        let habitsData = {};
+        let currentUser = null;
+        
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log("👤 User Dashboard Loading...");
+            
+            // 1. CEK LOGIN
+            if (!isLoggedIn()) {
+                alert('⚠️ Silakan login terlebih dahulu!');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // 2. GET USER DATA
+            currentUser = getCurrentUser();
+            if (!currentUser) {
+                logout();
+                return;
+            }
+            
+            // 3. TAMPILKAN USER INFO
+            document.getElementById('userGreeting').textContent = currentUser.nama;
+            document.getElementById('welcomeMessage').textContent = `Selamat datang, ${currentUser.nama}!`;
+            
+            // 4. SETUP DATE SELECTOR
+            setupDateSelector();
+            
+            // 5. LOAD TODAY'S DATA
+            await loadHabitsForDate(currentDate);
+            
+            // 6. SETUP EVENT LISTENERS
+            setupEventListeners();
+            
+            // 7. UPDATE PROGRESS
+            updateProgress();
+            
+            console.log("✅ User Dashboard Ready!");
+        });
+        
+        // ==============================================
+        // DATE MANAGEMENT
+        // ==============================================
+        
+        function setupDateSelector() {
+            const dateInput = document.getElementById('selectedDate');
+            const today = new Date().toISOString().split('T')[0];
+            
+            // Set max date to today
+            dateInput.max = today;
+            dateInput.value = currentDate;
+            
+            // Update date display
+            updateDateDisplay();
+            
+            // Handle date change
+            dateInput.addEventListener('change', async function() {
+                currentDate = this.value;
+                updateDateDisplay();
+                await loadHabitsForDate(currentDate);
+                updateProgress();
+                
+                // Hide history if viewing current day
+                if (currentDate === today) {
+                    document.getElementById('historySection').style.display = 'none';
+                }
+            });
+        }
+        
+        function updateDateDisplay() {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const dateObj = new Date(currentDate);
+            const dateString = dateObj.toLocaleDateString('id-ID', options);
+            
+            document.getElementById('currentDateDisplay').textContent = dateString;
+            
+            // Highlight if today
+            const today = new Date().toISOString().split('T')[0];
+            if (currentDate === today) {
+                document.getElementById('currentDateDisplay').innerHTML += 
+                    ' <span style="color: #4CAF50;"><i class="fas fa-calendar-day"></i> Hari Ini</span>';
+            }
+        }
+        
+        function loadToday() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('selectedDate').value = today;
+            currentDate = today;
+            updateDateDisplay();
+            loadHabitsForDate(currentDate);
+            updateProgress();
+            document.getElementById('historySection').style.display = 'none';
+        }
+        
+        // ==============================================
+        // HABITS DATA MANAGEMENT
+        // ==============================================
+        
+        async function loadHabitsForDate(date) {
+            console.log(`📅 Loading habits for date: ${date}`);
+            
+            try {
+                // Reset form
+                resetHabitsForm();
+                
+                // Load from Firebase
+                if (typeof db !== 'undefined' && currentUser) {
+                    const snapshot = await db.collection('habits')
+                        .where('userId', '==', currentUser.id)
+                        .where('date', '==', date)
+                        .limit(1)
+                        .get();
+                    
+                    if (!snapshot.empty) {
+                        const data = snapshot.docs[0].data();
+                        habitsData = data.habits || {};
+                        
+                        // Fill form with saved data
+                        fillHabitsForm(habitsData);
+                        
+                        console.log(`✅ Loaded existing data for ${date}`);
+                        updateSaveButton(true);
+                    } else {
+                        habitsData = {};
+                        console.log(`📝 No data found for ${date}, starting fresh`);
+                        updateSaveButton(false);
+                    }
+                } else {
+                    // Fallback to localStorage
+                    const key = `habits_${currentUser.nama}_${date}`;
+                    const saved = localStorage.getItem(key);
+                    
+                    if (saved) {
+                        habitsData = JSON.parse(saved);
+                        fillHabitsForm(habitsData);
+                        updateSaveButton(true);
+                    } else {
+                        habitsData = {};
+                        updateSaveButton(false);
+                    }
+                }
+                
+                // Update badges
+                updateAchievementBadges();
+                
+            } catch (error) {
+                console.error("❌ Error loading habits:", error);
+                alert('Gagal memuat data: ' + error.message);
+            }
+        }
+        
+        function resetHabitsForm() {
+            // Reset all inputs
+            document.querySelectorAll('.habit-input').forEach(input => {
+                if (input.type === 'checkbox') {
+                    input.checked = false;
+                } else if (input.type === 'time') {
+                    input.value = '';
+                } else {
+                    input.value = '';
+                }
+            });
+            
+            document.querySelectorAll('.habit-checkbox').forEach(cb => {
+                cb.checked = false;
+            });
+            
+            document.querySelectorAll('textarea').forEach(ta => {
+                ta.value = '';
+            });
+        }
+        
+        function fillHabitsForm(data) {
+            // Habit 1: Bangun Pagi
+            if (data.bangunPagi) {
+                document.getElementById('bangunPagi').value = data.bangunPagi;
+            }
+            
+            // Habit 2: Ibadah
+            const ibadahChecks = ['subuh', 'doaSubuh', 'dzuhur', 'doaDzuhur', 'ashar', 'doaAshar', 'magrib', 'doaMagrib', 'isya', 'doaIsya'];
+            ibadahChecks.forEach(id => {
+                if (data[id]) {
+                    document.getElementById(id).checked = true;
+                }
+            });
+            
+            // Habit 3: Olahraga
+            if (data.olahragaWaktu) {
+                document.getElementById('olahragaWaktu').value = data.olahragaWaktu;
+            }
+            if (data.olahragaJenis) {
+                document.getElementById('olahragaJenis').value = data.olahragaJenis;
+            }
+            
+            // Habit 4: Makan
+            const makanChecks = ['makanPagi', 'makanSiang', 'makanMalam'];
+            makanChecks.forEach(id => {
+                if (data[id]) {
+                    document.getElementById(id).checked = true;
+                }
+            });
+            
+            if (data.menuPagi) document.getElementById('menuPagi').value = data.menuPagi;
+            if (data.menuSiang) document.getElementById('menuSiang').value = data.menuSiang;
+            if (data.menuMalam) document.getElementById('menuMalam').value = data.menuMalam;
+            
+            // Habit 5: Belajar
+            if (data.belajarWaktu) {
+                document.getElementById('belajarWaktu').value = data.belajarWaktu;
+            }
+            if (data.belajarMateri) {
+                document.getElementById('belajarMateri').value = data.belajarMateri;
+            }
+            
+            // Habit 6: Bermasyarakat
+            if (data.bantuOrangTua) {
+                document.getElementById('bantuOrangTua').checked = true;
+            }
+            if (data.halDibantu) {
+                document.getElementById('halDibantu').value = data.halDibantu;
+            }
+            
+            // Habit 7: Tidur
+            if (data.tidurWaktu) {
+                document.getElementById('tidurWaktu').value = data.tidurWaktu;
+            }
+        }
+        
+        function collectHabitsData() {
+            const data = {
+                // Habit 1
+                bangunPagi: document.getElementById('bangunPagi').value,
+                
+                // Habit 2
+                subuh: document.getElementById('subuh').checked,
+                doaSubuh: document.getElementById('doaSubuh').checked,
+                dzuhur: document.getElementById('dzuhur').checked,
+                doaDzuhur: document.getElementById('doaDzuhur').checked,
+                ashar: document.getElementById('ashar').checked,
+                doaAshar: document.getElementById('doaAshar').checked,
+                magrib: document.getElementById('magrib').checked,
+                doaMagrib: document.getElementById('doaMagrib').checked,
+                isya: document.getElementById('isya').checked,
+                doaIsya: document.getElementById('doaIsya').checked,
+                
+                // Habit 3
+                olahragaWaktu: document.getElementById('olahragaWaktu').value,
+                olahragaJenis: document.getElementById('olahragaJenis').value,
+                
+                // Habit 4
+                makanPagi: document.getElementById('makanPagi').checked,
+                menuPagi: document.getElementById('menuPagi').value,
+                makanSiang: document.getElementById('makanSiang').checked,
+                menuSiang: document.getElementById('menuSiang').value,
+                makanMalam: document.getElementById('makanMalam').checked,
+                menuMalam: document.getElementById('menuMalam').value,
+                
+                // Habit 5
+                belajarWaktu: document.getElementById('belajarWaktu').value,
+                belajarMateri: document.getElementById('belajarMateri').value,
+                
+                // Habit 6
+                bantuOrangTua: document.getElementById('bantuOrangTua').checked,
+                halDibantu: document.getElementById('halDibantu').value,
+                
+                // Habit 7
+                tidurWaktu: document.getElementById('tidurWaktu').value,
+                
+                // Metadata
+                lastUpdated: new Date().toISOString(),
+                date: currentDate
+            };
+            
+            return data;
+        }
+        
+        // ==============================================
+        // SAVE TO DATABASE
+        // ==============================================
+        
+        async function saveDailyHabits() {
+            const btn = document.getElementById('saveBtn');
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> MENYIMPAN...';
+            btn.classList.add('saving');
+            btn.disabled = true;
+            
+            try {
+                // Collect data from form
+                const habitsData = collectHabitsData();
+                
+                // Prepare document data
+                const habitDoc = {
+                    userId: currentUser.id,
+                    userName: currentUser.nama,
+                    date: currentDate,
+                    habits: habitsData,
+                    completedAt: new Date().toISOString(),
+                    points: calculatePoints(habitsData)
+                };
+                
+                let success = false;
+                
+                // Try Firebase first
+                if (typeof db !== 'undefined') {
+                    // Check if document already exists
+                    const snapshot = await db.collection('habits')
+                        .where('userId', '==', currentUser.id)
+                        .where('date', '==', currentDate)
+                        .limit(1)
+                        .get();
+                    
+                    if (!snapshot.empty) {
+                        // Update existing
+                        await db.collection('habits').doc(snapshot.docs[0].id).update(habitDoc);
+                        console.log("✅ Updated existing habits record");
+                    } else {
+                        // Create new
+                        await db.collection('habits').add(habitDoc);
+                        console.log("✅ Created new habits record");
+                    }
+                    
+                    success = true;
+                } else {
+                    // Fallback to localStorage
+                    const key = `habits_${currentUser.nama}_${currentDate}`;
+                    localStorage.setItem(key, JSON.stringify(habitsData));
+                    console.log("✅ Saved to localStorage");
+                    success = true;
+                }
+                
+                if (success) {
+                    // Update UI
+                    updateSaveButton(true);
+                    updateAchievementBadges();
+                    updateProgress();
+                    
+                    // Show success message
+                    setTimeout(() => {
+                        alert('✅ Data berhasil disimpan!');
+                    }, 300);
+                }
+                
+            } catch (error) {
+                console.error("❌ Save error:", error);
+                alert('❌ Gagal menyimpan: ' + error.message);
+                
+            } finally {
+                btn.innerHTML = originalText;
+                btn.classList.remove('saving');
+                btn.disabled = false;
+            }
+        }
+        
+        function calculatePoints(data) {
+            let points = 0;
+            
+            // Habit 1: Bangun pagi (2 points if before 6 AM)
+            if (data.bangunPagi) {
+                const hour = parseInt(data.bangunPagi.split(':')[0]);
+                if (hour < 6) points += 2;
+                else if (hour < 8) points += 1;
+            }
+            
+            // Habit 2: Ibadah (0.5 points per prayer, 0.5 points per doa)
+            const ibadahPoints = ['subuh', 'dzuhur', 'ashar', 'magrib', 'isya']
+                .filter(prayer => data[prayer]).length * 1.5; // 1 for prayer + 0.5 for doa
+            
+            points += ibadahPoints;
+            
+            // Habit 3: Olahraga (2 points if filled)
+            if (data.olahragaWaktu && data.olahragaJenis) points += 2;
+            
+            // Habit 4: Makan (1 point per meal)
+            const makanPoints = ['makanPagi', 'makanSiang', 'makanMalam']
+                .filter(meal => data[meal]).length;
+            points += makanPoints;
+            
+            // Habit 5: Belajar (2 points if filled)
+            if (data.belajarWaktu && data.belajarMateri) points += 2;
+            
+            // Habit 6: Bermasyarakat (2 points)
+            if (data.bantuOrangTua && data.halDibantu) points += 2;
+            
+            // Habit 7: Tidur (2 points if before 10 PM)
+            if (data.tidurWaktu) {
+                const hour = parseInt(data.tidurWaktu.split(':')[0]);
+                if (hour < 22) points += 2;
+                else if (hour < 24) points += 1;
+            }
+            
+            return points;
+        }
+        
+        // ==============================================
+        // HISTORY SYSTEM
+        // ==============================================
+        
+        async function showHistory() {
+            const historySection = document.getElementById('historySection');
+            const historyList = document.getElementById('historyList');
+            
+            // Toggle visibility
+            if (historySection.style.display === 'none') {
+                historySection.style.display = 'block';
+                
+                // Show loading
+                historyList.innerHTML = `
+                    <div style="text-align: center; padding: 30px;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 2rem;"></i>
+                        <p>Memuat riwayat...</p>
+                    </div>
+                `;
+                
+                // Load history
+                await loadHistory();
+                
+            } else {
+                historySection.style.display = 'none';
+            }
+        }
+        
+        async function loadHistory() {
+    try {
+        const historyList = document.getElementById('historyList');
+        
+        // Show loading
+        historyList.innerHTML = `
+            <div style="text-align: center; padding: 30px;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 2rem;"></i>
+                <p>Memuat riwayat...</p>
+            </div>
+        `;
+        
+        // Load history using the new function
+        const historyData = await getUserHabits(currentUser.id, 50);
+        
+        console.log("History data loaded:", historyData);
+        
+        if (historyData.length === 0) {
+            historyList.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #666;">
+                    <i class="fas fa-inbox" style="font-size: 3rem;"></i>
+                    <p>Belum ada riwayat kebiasaan</p>
+                    <p style="font-size: 0.9rem; margin-top: 10px;">
+                        Isi tracker 7 kebiasaan hari ini untuk memulai!
+                    </p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Calculate statistics
+        let totalPoints = 0;
+        let bestDay = { points: 0, date: '' };
+        let currentStreak = 0;
+        let maxStreak = 0;
+        
+        // Sort by date just in case
+        historyData.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        // Calculate streaks and best day
+        let previousDate = null;
+        let streakCounter = 0;
+        
+        historyData.forEach(record => {
+            const points = record.points || calculatePoints(record.habits || {});
+            totalPoints += points;
+            
+            // Check for best day
+            if (points > bestDay.points) {
+                bestDay = { points: points, date: record.date };
+            }
+            
+            // Calculate streak
+            if (previousDate) {
+                const prevDate = new Date(previousDate);
+                const currDate = new Date(record.date);
+                const diffDays = Math.floor((prevDate - currDate) / (1000 * 60 * 60 * 24));
+                
+                if (diffDays === 1) {
+                    streakCounter++;
+                    maxStreak = Math.max(maxStreak, streakCounter);
+                } else if (diffDays > 1) {
+                    streakCounter = 0;
+                }
+            } else {
+                streakCounter = 1;
+                maxStreak = 1;
+            }
+            
+            previousDate = record.date;
+        });
+        
+        currentStreak = streakCounter;
+        const averagePoints = Math.round(totalPoints / historyData.length);
+        
+        // Display history
+        let html = `
+            <div style="background: linear-gradient(135deg, #2196F3, #1976D2); color: white; padding: 20px; border-radius: 10px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);">
+                <h3 style="margin: 0 0 15px 0; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-trophy"></i> STATISTIK PENCAPAIAN
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px;">
+                    <div style="text-align: center; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">
+                        <div style="font-size: 2rem; font-weight: bold;">${historyData.length}</div>
+                        <div style="font-size: 0.9rem; opacity: 0.9;">Hari Tercatat</div>
+                    </div>
+                    <div style="text-align: center; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">
+                        <div style="font-size: 2rem; font-weight: bold;">${totalPoints}</div>
+                        <div style="font-size: 0.9rem; opacity: 0.9;">Total Poin</div>
+                    </div>
+                    <div style="text-align: center; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">
+                        <div style="font-size: 2rem; font-weight: bold;">${averagePoints}</div>
+                        <div style="font-size: 0.9rem; opacity: 0.9;">Rata-rata/Hari</div>
+                    </div>
+                    <div style="text-align: center; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">
+                        <div style="font-size: 2rem; font-weight: bold;">${currentStreak}</div>
+                        <div style="font-size: 0.9rem; opacity: 0.9;">Streak Aktif</div>
+                    </div>
+                </div>
+                
+                ${bestDay.points > 0 ? `
+                    <div style="margin-top: 15px; padding: 10px; background: rgba(255,215,0,0.2); border-radius: 6px; border-left: 4px solid #FFD700;">
+                        <i class="fas fa-crown" style="color: #FFD700;"></i>
+                        <strong> Hari Terbaik:</strong> ${new Date(bestDay.date).toLocaleDateString('id-ID')} 
+                        - ${bestDay.points} poin
+                    </div>
+                ` : ''}
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h4 style="margin: 0;"><i class="fas fa-history"></i> RIWAYAT HARIAN</h4>
+                <div style="font-size: 0.9rem; color: #666;">
+                    ${historyData.length} catatan ditemukan
+                </div>
+            </div>
+        `;
+        
+        historyData.forEach((record, index) => {
+            const dateObj = new Date(record.date);
+            const dateString = dateObj.toLocaleDateString('id-ID', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            const habits = record.habits || {};
+            const points = record.points || calculatePoints(habits);
+            const percentage = Math.round((points / 20) * 100);
+            
+            // Determine color based on points
+            let cardColor = '#f44336';
+            let progressColor = '#f44336';
+            
+            if (points >= 16) {
+                cardColor = '#4CAF50';
+                progressColor = '#4CAF50';
+            } else if (points >= 12) {
+                cardColor = '#FF9800';
+                progressColor = '#FF9800';
+            }
+            
+            // Check which habits are completed
+            const completedHabits = [];
+            if (habits.bangunPagi) completedHabits.push('Bangun Pagi');
+            if (habits.subuh || habits.dzuhur || habits.ashar || habits.magrib || habits.isya) {
+                completedHabits.push('Sholat');
+            }
+            if (habits.olahragaJenis) completedHabits.push('Olahraga');
+            if (habits.makanPagi || habits.makanSiang || habits.makanMalam) completedHabits.push('Makan');
+            if (habits.belajarMateri) completedHabits.push('Belajar');
+            if (habits.bantuOrangTua) completedHabits.push('Bantu Ortu');
+            if (habits.tidurWaktu) completedHabits.push('Tidur Cepat');
+            
+            html += `
+                <div class="history-day" style="border-left-color: ${cardColor};">
+                    <h4>
+                        <span style="font-weight: bold; color: #333;">${dateString}</span>
+                        <span style="color: ${cardColor}; font-weight: bold; font-size: 1.2rem;">
+                            ${points} poin
+                            ${points >= 16 ? '🏆' : points >= 12 ? '⭐' : ''}
+                        </span>
+                    </h4>
+                    
+                    <!-- Progress bar -->
+                    <div style="margin: 10px 0;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 5px;">
+                            <span>Progress: ${percentage}%</span>
+                            <span>${completedHabits.length}/7 kebiasaan</span>
+                        </div>
+                        <div style="height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden;">
+                            <div style="height: 100%; width: ${percentage}%; background: ${progressColor}; border-radius: 4px;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick stats -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin: 15px 0; font-size: 0.9rem;">
+                        ${habits.bangunPagi ? `<div><i class="fas fa-sun" style="color: #FF9800;"></i> Bangun: ${habits.bangunPagi}</div>` : ''}
+                        ${habits.olahragaJenis ? `<div><i class="fas fa-running" style="color: #4CAF50;"></i> ${habits.olahragaJenis}</div>` : ''}
+                        ${habits.tidurWaktu ? `<div><i class="fas fa-bed" style="color: #673AB7;"></i> Tidur: ${habits.tidurWaktu}</div>` : ''}
+                        ${(() => {
+                            const prayers = ['subuh', 'dzuhur', 'ashar', 'magrib', 'isya'];
+                            const completed = prayers.filter(p => habits[p]).length;
+                            return completed > 0 ? 
+                                `<div><i class="fas fa-pray" style="color: #2196F3;"></i> Sholat: ${completed}/5</div>` : 
+                                '';
+                        })()}
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div style="display: flex; gap: 10px; margin-top: 15px;">
+                        <button onclick="loadHistoryDate('${record.date}')" 
+                                style="flex: 1; padding: 10px; background: #2196F3; color: white; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <i class="fas fa-edit"></i> Lihat/Edit
+                        </button>
+                        
+                        <button onclick="deleteHistoryRecord('${record.date}', '${record.id || ''}')" 
+                                style="padding: 10px 15px; background: #f44336; color: white; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        
+        // Add export button
+        html += `
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                <button onclick="exportHistoryToExcel()" 
+                        style="padding: 12px 24px; background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-file-excel"></i> Export ke Excel
+                </button>
+                <p style="color: #666; margin-top: 10px; font-size: 0.9rem;">
+                    <i class="fas fa-info-circle"></i> Data dapat diunduh untuk arsip pribadi
+                </p>
+            </div>
+        `;
+        
+        historyList.innerHTML = html;
+        
+    } catch (error) {
+        console.error("❌ Error loading history:", error);
+        
+        historyList.innerHTML = `
+            <div style="text-align: center; color: #f44336; padding: 40px;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                <h4>Gagal Memuat Riwayat</h4>
+                <p>${error.message}</p>
+                <button onclick="loadHistoryFromLocalStorage()" 
+                        style="margin-top: 20px; padding: 12px 24px; background: #ff9800; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                    <i class="fas fa-database"></i> Coba Data Lokal
+                </button>
+            </div>
+        `;
+    }
+}
+
+// New delete function
+async function deleteHistoryRecord(date, recordId = '') {
+    if (!confirm(`Hapus data tanggal ${new Date(date).toLocaleDateString('id-ID')}?\n\nData akan dihapus permanen!`)) {
+        return;
+    }
+    
+    try {
+        const result = await deleteHabits(currentUser.id, date);
+        
+        if (result.success) {
+            alert('✅ Data berhasil dihapus!');
+            
+            // Reload history
+            await loadHistory();
+            
+            // If deleted current date, reset form
+            if (date === currentDate) {
+                resetHabitsForm();
+                updateSaveButton(false);
+                updateProgress();
+            }
+        } else {
+            alert('❌ ' + result.message);
+        }
+        
+    } catch (error) {
+        console.error("Delete error:", error);
+        alert('❌ Gagal menghapus: ' + error.message);
+    }
+}
+
+// Export to Excel function
+function exportHistoryToExcel() {
+    alert('Fitur export Excel akan tersedia segera!');
+    // You can implement this using SheetJS library
+}
+        
+        // ==============================================
+        // UI UPDATES
+        // ==============================================
+        
+        function updateSaveButton(isSaved) {
+            const btn = document.getElementById('saveBtn');
+            if (isSaved) {
+                btn.innerHTML = '<i class="fas fa-check"></i> DATA TERSIMPAN (Update?)';
+                btn.style.background = '#2196F3';
+            } else {
+                btn.innerHTML = '<i class="fas fa-save"></i> SIMPAN DATA HARIAN';
+                btn.style.background = '#4CAF50';
+            }
+        }
+        
+        function updateAchievementBadges() {
+            const data = collectHabitsData();
+            
+            // Habit 1: Bangun pagi
+            const badge1 = document.getElementById('badge1');
+            badge1.style.display = data.bangunPagi ? 'inline-flex' : 'none';
+            
+            // Habit 2: Ibadah (if at least 3 prayers completed)
+            const prayers = ['subuh', 'dzuhur', 'ashar', 'magrib', 'isya'];
+            const completedPrayers = prayers.filter(p => data[p]).length;
+            const badge2 = document.getElementById('badge2');
+            badge2.style.display = completedPrayers >= 3 ? 'inline-flex' : 'none';
+            
+            // Habit 3: Olahraga
+            const badge3 = document.getElementById('badge3');
+            badge3.style.display = (data.olahragaWaktu && data.olahragaJenis) ? 'inline-flex' : 'none';
+            
+            // Habit 4: Makan (if at least 2 meals)
+            const meals = ['makanPagi', 'makanSiang', 'makanMalam'];
+            const completedMeals = meals.filter(m => data[m]).length;
+            const badge4 = document.getElementById('badge4');
+            badge4.style.display = completedMeals >= 2 ? 'inline-flex' : 'none';
+            
+            // Habit 5: Belajar
+            const badge5 = document.getElementById('badge5');
+            badge5.style.display = (data.belajarWaktu && data.belajarMateri) ? 'inline-flex' : 'none';
+            
+            // Habit 6: Bermasyarakat
+            const badge6 = document.getElementById('badge6');
+            badge6.style.display = (data.bantuOrangTua && data.halDibantu) ? 'inline-flex' : 'none';
+            
+            // Habit 7: Tidur
+            const badge7 = document.getElementById('badge7');
+            badge7.style.display = data.tidurWaktu ? 'inline-flex' : 'none';
+        }
+        
+        function updateProgress() {
+            const data = collectHabitsData();
+            const points = calculatePoints(data);
+            const maxPoints = 20; // Maximum possible points
+            
+            const percentage = Math.min(100, Math.round((points / maxPoints) * 100));
+            
+            document.getElementById('progressFill').style.width = `${percentage}%`;
+            document.getElementById('progressText').textContent = `${points}/${maxPoints} poin (${percentage}%)`;
+            
+            // Color based on percentage
+            const progressFill = document.getElementById('progressFill');
+            if (percentage >= 80) {
+                progressFill.style.background = 'linear-gradient(90deg, #4CAF50, #8BC34A)';
+            } else if (percentage >= 50) {
+                progressFill.style.background = 'linear-gradient(90deg, #FF9800, #FFC107)';
+            } else {
+                progressFill.style.background = 'linear-gradient(90deg, #f44336, #FF5722)';
+            }
+        }
+        
+        function setupEventListeners() {
+            // Auto-update progress when inputs change
+            document.querySelectorAll('input, textarea').forEach(element => {
+                element.addEventListener('input', updateProgress);
+                element.addEventListener('change', updateProgress);
+            });
+            
+            // Auto-update achievement badges
+            document.querySelectorAll('.habit-checkbox, .habit-input').forEach(element => {
+                element.addEventListener('change', updateAchievementBadges);
+            });
+            
+            // Auto-save after 5 seconds of inactivity (optional)
+            let saveTimer;
+            document.querySelectorAll('input, textarea').forEach(element => {
+                element.addEventListener('input', () => {
+                    clearTimeout(saveTimer);
+                    saveTimer = setTimeout(() => {
+                        // Auto-save only if data exists
+                        const data = collectHabitsData();
+                        if (Object.values(data).some(val => val !== '' && val !== false)) {
+                            console.log("Auto-saving...");
+                            saveDailyHabits();
+                        }
+                    }, 5000);
+                });
+            });
+        }
+        
+        // ==============================================
+        // EXPOSE FUNCTIONS
+        // ==============================================
+        
+        window.loadToday = loadToday;
+        window.showHistory = showHistory;
+        window.saveDailyHabits = saveDailyHabits;
+        window.loadHistoryDate = loadHistoryDate;
+        
+        console.log("🛠️ User dashboard functions ready!");
+    </script>
+</body>
+</html>
