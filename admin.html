@@ -112,11 +112,190 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', async function() {
-            // Check authentication
-            if (!customAuth.isLoggedIn() || customAuth.getCurrentUser().role !== 'admin') {
-                window.location.href = 'login.html';
-                return;
+    document.addEventListener('DOMContentLoaded', async function() {
+        console.log("Admin page loaded");
+        
+        // 1. CEK LOGIN
+        if (!SimpleAuth.isLoggedIn()) {
+            alert('Silakan login terlebih dahulu!');
+            window.location.href = 'login.html';
+            return;
+        }
+        
+        const currentUser = SimpleAuth.getCurrentUser();
+        console.log("Current user:", currentUser);
+        
+        // 2. CEK ROLE ADMIN
+        if (currentUser.role !== 'admin') {
+            alert('Anda bukan admin!');
+            SimpleAuth.logout();
+            return;
+        }
+        
+        // 3. TAMPILKAN NAMA ADMIN
+        document.getElementById('adminName').textContent = currentUser.nama;
+        
+        // 4. LOAD DATA USER
+        await loadUsers();
+        
+        // 5. LOAD STATISTIK
+        await loadStats();
+        
+        // 6. SETUP EVENT LISTENERS
+        setupEventListeners();
+        
+        console.log("Admin dashboard ready");
+    });
+    
+    async function loadUsers() {
+        try {
+            const users = await SimpleAuth.getAllUsers();
+            const tbody = document.getElementById('usersList');
+            
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            users.forEach((user, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${user.nama}</td>
+                    <td>
+                        <span class="role-badge ${user.role}">
+                            ${user.role.toUpperCase()}
+                        </span>
+                    </td>
+                    <td>${new Date(user.createdAt).toLocaleDateString('id-ID')}</td>
+                    <td>
+                        ${user.nama !== 'admin' ? 
+                            `<button onclick="deleteUser('${user.id}', '${user.nama}')" 
+                                    class="btn-delete" title="Hapus user">
+                                <i class="fas fa-trash"></i>
+                            </button>` 
+                            : '<em>Default</em>'
+                        }
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+        } catch (error) {
+            console.error("Error loading users:", error);
+        }
+    }
+    
+    async function loadStats() {
+        try {
+            const users = await SimpleAuth.getAllUsers();
+            
+            const totalUsers = users.length;
+            const adminCount = users.filter(u => u.role === 'admin').length;
+            const userCount = users.filter(u => u.role === 'user').length;
+            
+            // Update stats display
+            document.getElementById('totalUsersAdmin').textContent = totalUsers;
+            document.getElementById('adminUsers').textContent = adminCount;
+            document.getElementById('regularUsers').textContent = userCount;
+            
+        } catch (error) {
+            console.error("Error loading stats:", error);
+        }
+    }
+    
+    function setupEventListeners() {
+        // Form tambah user
+        const addUserForm = document.getElementById('addUserForm');
+        if (addUserForm) {
+            addUserForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const nameInput = document.getElementById('newUserName');
+                const roleSelect = document.getElementById('userRole');
+                
+                const nama = nameInput.value.trim();
+                const role = roleSelect.value;
+                
+                if (!nama) {
+                    alert('Nama tidak boleh kosong!');
+                    return;
+                }
+                
+                // Tampilkan loading
+                const btn = this.querySelector('button[type="submit"]');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menambahkan...';
+                btn.disabled = true;
+                
+                try {
+                    const result = await SimpleAuth.addUser(nama, role);
+                    
+                    if (result.success) {
+                        alert(result.message);
+                        nameInput.value = '';
+                        await loadUsers();
+                        await loadStats();
+                    } else {
+                        alert(result.message);
+                    }
+                    
+                } catch (error) {
+                    alert('Error: ' + error.message);
+                } finally {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            });
+        }
+        
+        // Navigation sidebar
+        document.querySelectorAll('.sidebar-menu a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Remove active class from all links
+                document.querySelectorAll('.sidebar-menu a').forEach(l => {
+                    l.classList.remove('active');
+                });
+                
+                // Add active class to clicked link
+                this.classList.add('active');
+                
+                // Show corresponding section
+                const targetId = this.getAttribute('href').substring(1);
+                document.querySelectorAll('.admin-section').forEach(section => {
+                    section.style.display = 'none';
+                });
+                
+                const targetSection = document.getElementById(targetId);
+                if (targetSection) {
+                    targetSection.style.display = 'block';
+                }
+            });
+        });
+    }
+    
+    async function deleteUser(userId, userName) {
+        if (!confirm(`Yakin ingin menghapus user "${userName}"?`)) {
+            return;
+        }
+        
+        try {
+            const result = await SimpleAuth.deleteUser(userId);
+            
+            if (result.success) {
+                alert(result.message);
+                await loadUsers();
+                await loadStats();
+            } else {
+                alert(result.message);
+            }
+            
+        } catch (error) {
+            alert('Error: ' + error.message);
+        }
+    }
+</script>
             }
 
             // Display admin name
