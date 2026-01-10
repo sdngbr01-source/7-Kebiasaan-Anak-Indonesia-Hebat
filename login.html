@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - 7 Kebiasaan</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="firebase-config.js"></script>
+</head>
+<body class="login-page">
+    <div class="login-container">
+        <div class="login-header">
+            <h1><i class="fas fa-user-circle"></i> Masuk ke Sistem</h1>
+            <p>Gunakan nama yang sudah terdaftar</p>
+        </div>
+        
+        <div class="login-card">
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="nama"><i class="fas fa-user"></i> Nama Lengkap</label>
+                    <input type="text" id="nama" placeholder="Masukkan nama Anda" required>
+                </div>
+                
+                <button type="submit" class="btn-login">
+                    <i class="fas fa-sign-in-alt"></i> Masuk
+                </button>
+                
+                <div class="login-info">
+                    <p><i class="fas fa-info-circle"></i> Hanya nama terdaftar yang bisa masuk</p>
+                    <p><i class="fas fa-shield-alt"></i> Data tersimpan aman di database online</p>
+                </div>
+            </form>
+            
+            <div class="login-links">
+                <a href="index.html"><i class="fas fa-home"></i> Kembali ke Beranda</a>
+                <button id="adminRegisterBtn" class="btn-admin">
+                    <i class="fas fa-user-shield"></i> Daftar Admin Baru
+                </button>
+            </div>
+        </div>
+        
+        <!-- Admin Registration Modal -->
+        <div id="adminModal" class="modal">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h3><i class="fas fa-user-plus"></i> Registrasi Admin Baru</h3>
+                <form id="adminRegisterForm">
+                    <div class="form-group">
+                        <label for="adminName">Nama Admin</label>
+                        <input type="text" id="adminName" placeholder="Masukkan nama admin" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="adminPassword">Password Khusus</label>
+                        <input type="password" id="adminPassword" placeholder="Masukkan password khusus" required>
+                    </div>
+                    <button type="submit" class="btn-admin">
+                        <i class="fas fa-user-plus"></i> Daftarkan Admin
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if already logged in
+            if (customAuth.isLoggedIn()) {
+                const user = customAuth.getCurrentUser();
+                if (user.role === 'admin') {
+                    window.location.href = 'admin.html';
+                } else {
+                    window.location.href = 'user.html';
+                }
+            }
+
+            // Login form
+            document.getElementById('loginForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const nama = document.getElementById('nama').value.trim();
+                
+                const result = await customAuth.loginUser(nama);
+                
+                if (result.success) {
+                    if (result.role === 'admin') {
+                        window.location.href = 'admin.html';
+                    } else {
+                        window.location.href = 'user.html';
+                    }
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            });
+
+            // Admin registration modal
+            const modal = document.getElementById('adminModal');
+            const adminBtn = document.getElementById('adminRegisterBtn');
+            const closeBtn = document.querySelector('.close-modal');
+
+            adminBtn.onclick = () => modal.style.display = 'block';
+            closeBtn.onclick = () => modal.style.display = 'none';
+
+            window.onclick = (event) => {
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            };
+
+            // Admin registration form
+            document.getElementById('adminRegisterForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const adminName = document.getElementById('adminName').value.trim();
+                const password = document.getElementById('adminPassword').value;
+                
+                // Simple password check (you can change this)
+                if (password !== 'admin123') {
+                    alert('Password khusus salah!');
+                    return;
+                }
+                
+                const result = await customAuth.registerUser(adminName, 'admin');
+                
+                if (result.success) {
+                    alert('Admin berhasil didaftarkan!');
+                    modal.style.display = 'none';
+                    document.getElementById('adminRegisterForm').reset();
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
