@@ -3,134 +3,266 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - 7 Kebiasaan</title>
+    <title>Login - 7 Kebiasaan Anak Indonesia Hebat</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script src="firebase-config.js"></script>
+    <style>
+        .debug-info {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-size: 12px;
+        }
+        .debug-info h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .test-buttons {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+    </style>
 </head>
 <body class="login-page">
     <div class="login-container">
         <div class="login-header">
-            <h1><i class="fas fa-user-circle"></i> Masuk ke Sistem</h1>
-            <p>Gunakan nama yang sudah terdaftar</p>
+            <h1><i class="fas fa-sign-in-alt"></i> LOGIN SYSTEM</h1>
+            <p>7 Kebiasaan Anak Indonesia Hebat</p>
+        </div>
+        
+        <!-- Debug Info -->
+        <div class="debug-info">
+            <h4><i class="fas fa-bug"></i> INFO LOGIN:</h4>
+            <p><strong>Admin Default:</strong> nama: <code>admin</code> | password: <code>admin123</code></p>
+            <p><strong>User Biasa:</strong> hanya nama saja (harus didaftarkan admin)</p>
         </div>
         
         <div class="login-card">
             <form id="loginForm">
                 <div class="form-group">
-                    <label for="nama"><i class="fas fa-user"></i> Nama Lengkap</label>
-                    <input type="text" id="nama" placeholder="Masukkan nama Anda" required>
+                    <label for="nama"><i class="fas fa-user"></i> NAMA LENGKAP</label>
+                    <input type="text" id="nama" placeholder="Masukkan nama Anda" required 
+                           autocomplete="off" autofocus>
                 </div>
                 
-                <button type="submit" class="btn-login">
-                    <i class="fas fa-sign-in-alt"></i> Masuk
+                <div class="form-group" id="passwordGroup" style="display: none;">
+                    <label for="password"><i class="fas fa-lock"></i> PASSWORD</label>
+                    <input type="password" id="password" placeholder="Masukkan password">
+                    <small style="color: #666;">Password hanya untuk admin</small>
+                </div>
+                
+                <button type="submit" class="btn-login" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i> LOGIN SEKARANG
                 </button>
                 
-                <div class="login-info">
-                    <p><i class="fas fa-info-circle"></i> Hanya nama terdaftar yang bisa masuk</p>
-                    <p><i class="fas fa-shield-alt"></i> Data tersimpan aman di database online</p>
-                </div>
+                <div id="loginStatus" style="margin-top: 15px;"></div>
             </form>
+            
+            <div class="test-buttons">
+                <button onclick="testAdminLogin()" class="btn-admin" style="width: 100%; margin-bottom: 10px;">
+                    <i class="fas fa-user-shield"></i> TEST LOGIN ADMIN
+                </button>
+                
+                <button onclick="testFirebase()" class="btn-primary" style="width: 100%;">
+                    <i class="fas fa-database"></i> TEST KONEKSI DATABASE
+                </button>
+            </div>
             
             <div class="login-links">
                 <a href="index.html"><i class="fas fa-home"></i> Kembali ke Beranda</a>
-                <button id="adminRegisterBtn" class="btn-admin">
-                    <i class="fas fa-user-shield"></i> Daftar Admin Baru
+                <button onclick="clearStorage()" class="btn-logout" style="padding: 8px 12px;">
+                    <i class="fas fa-trash"></i> Clear Cache
                 </button>
-            </div>
-        </div>
-        
-        <!-- Admin Registration Modal -->
-        <div id="adminModal" class="modal">
-            <div class="modal-content">
-                <span class="close-modal">&times;</span>
-                <h3><i class="fas fa-user-plus"></i> Registrasi Admin Baru</h3>
-                <form id="adminRegisterForm">
-                    <div class="form-group">
-                        <label for="adminName">Nama Admin</label>
-                        <input type="text" id="adminName" placeholder="Masukkan nama admin" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="adminPassword">Password Khusus</label>
-                        <input type="password" id="adminPassword" placeholder="Masukkan password khusus" required>
-                    </div>
-                    <button type="submit" class="btn-admin">
-                        <i class="fas fa-user-plus"></i> Daftarkan Admin
-                    </button>
-                </form>
             </div>
         </div>
     </div>
 
-   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Check if already logged in
-        if (customAuth.isLoggedIn()) {
-            const user = customAuth.getCurrentUser();
-            if (user.role === 'admin') {
-                window.location.href = 'admin.html';
-            } else {
-                window.location.href = 'user.html';
-            }
-        }
-
-        // Simple login form
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const nama = document.getElementById('nama').value.trim();
-            const password = document.getElementById('password') ? document.getElementById('password').value : '';
-            
-            // Show loading
-            const btn = this.querySelector('button[type="submit"]');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
-            btn.disabled = true;
-            
-            try {
-                const result = await customAuth.loginUser(nama, password || null);
-                
-                if (result.success) {
-                    if (result.role === 'admin') {
-                        window.location.href = 'admin.html';
-                    } else {
-                        window.location.href = 'user.html';
-                    }
-                } else {
-                    alert('Login gagal: ' + result.message);
-                }
-            } catch (error) {
-                alert('Error: ' + error.message);
-            } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
-        });
-
-        // Show password field if typing "admin"
-        const namaInput = document.getElementById('nama');
-        const passwordGroup = document.getElementById('passwordGroup');
+    <script>
+        // ==============================================
+        // FUNGSI UTAMA LOGIN
+        // ==============================================
         
-        if (namaInput && passwordGroup) {
-            namaInput.addEventListener('input', function() {
-                if (this.value.toLowerCase().includes('admin')) {
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("Login page loaded");
+            
+            // Cek jika sudah login
+            if (SimpleAuth.isLoggedIn()) {
+                const user = SimpleAuth.getCurrentUser();
+                alert(`Anda sudah login sebagai: ${user.nama}\nRedirect ke dashboard...`);
+                
+                if (user.role === 'admin') {
+                    window.location.href = 'admin.html';
+                } else {
+                    window.location.href = 'user.html';
+                }
+                return;
+            }
+            
+            // Auto show password field jika ketik "admin"
+            document.getElementById('nama').addEventListener('input', function() {
+                const nama = this.value.toLowerCase();
+                const passwordGroup = document.getElementById('passwordGroup');
+                
+                if (nama.includes('admin') || nama === 'admin') {
                     passwordGroup.style.display = 'block';
+                    document.getElementById('password').required = true;
                 } else {
                     passwordGroup.style.display = 'none';
+                    document.getElementById('password').required = false;
                 }
             });
-        }
-
-        // Admin registration button
-        const adminBtn = document.getElementById('adminRegisterBtn');
-        if (adminBtn) {
-            adminBtn.addEventListener('click', function() {
-                alert('Fitur ini hanya bisa diakses setelah login sebagai admin. Login dulu dengan:\nNama: admin\nPassword: admin123');
+            
+            // Handle form submit
+            document.getElementById('loginForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const nama = document.getElementById('nama').value.trim();
+                const password = document.getElementById('password').value;
+                const loginBtn = document.getElementById('loginBtn');
+                const statusDiv = document.getElementById('loginStatus');
+                
+                // Validasi input
+                if (!nama) {
+                    showStatus('Nama tidak boleh kosong!', 'error');
+                    return;
+                }
+                
+                // Jika ketik admin tapi password kosong
+                if ((nama.includes('admin') || nama === 'admin') && !password) {
+                    showStatus('Password diperlukan untuk login admin!', 'error');
+                    return;
+                }
+                
+                // Tampilkan loading
+                loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PROSES LOGIN...';
+                loginBtn.disabled = true;
+                statusDiv.innerHTML = '';
+                
+                try {
+                    console.log("Attempting login for:", nama);
+                    
+                    // Panggil fungsi login
+                    const result = await SimpleAuth.login(nama, password);
+                    
+                    console.log("Login result:", result);
+                    
+                    if (result.success) {
+                        showStatus('Login berhasil! Redirect...', 'success');
+                        
+                        // Delay sebentar sebelum redirect
+                        setTimeout(() => {
+                            if (result.role === 'admin') {
+                                window.location.href = 'admin.html';
+                            } else {
+                                window.location.href = 'user.html';
+                            }
+                        }, 1000);
+                        
+                    } else {
+                        showStatus('Login gagal: ' + result.message, 'error');
+                        loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> LOGIN SEKARANG';
+                        loginBtn.disabled = false;
+                    }
+                    
+                } catch (error) {
+                    console.error("Login error:", error);
+                    showStatus('Error sistem: ' + error.message, 'error');
+                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> LOGIN SEKARANG';
+                    loginBtn.disabled = false;
+                }
             });
+            
+            // Fungsi tampilkan status
+            function showStatus(message, type) {
+                const statusDiv = document.getElementById('loginStatus');
+                const color = type === 'success' ? '#4CAF50' : '#f44336';
+                statusDiv.innerHTML = `
+                    <div style="background: ${color}15; color: ${color}; 
+                         padding: 10px; border-radius: 5px; border-left: 4px solid ${color};">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+                        ${message}
+                    </div>
+                `;
+            }
+        });
+        
+        // ==============================================
+        // FUNGSI TESTING
+        // ==============================================
+        
+        // Test login admin otomatis
+        function testAdminLogin() {
+            document.getElementById('nama').value = 'admin';
+            document.getElementById('password').value = 'admin123';
+            document.getElementById('passwordGroup').style.display = 'block';
+            
+            // Auto submit setelah 500ms
+            setTimeout(() => {
+                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+            }, 500);
         }
-    });
-</script>
+        
+        // Test koneksi Firebase
+        async function testFirebase() {
+            try {
+                const statusDiv = document.getElementById('loginStatus');
+                statusDiv.innerHTML = '<div style="color: #2196F3;"><i class="fas fa-spinner fa-spin"></i> Testing Firebase connection...</div>';
+                
+                // Test write
+                const testRef = await db.collection('test_connection').add({
+                    test: 'Connection test',
+                    timestamp: new Date().toISOString(),
+                    status: 'OK'
+                });
+                
+                // Test read
+                const snapshot = await db.collection('test_connection').get();
+                
+                statusDiv.innerHTML = `
+                    <div style="background: #4CAF50; color: white; padding: 10px; border-radius: 5px;">
+                        <i class="fas fa-check-circle"></i>
+                        <strong>✅ FIREBASE CONNECTED!</strong><br>
+                        Database: OK | Documents: ${snapshot.size}
+                    </div>
+                `;
+                
+                // Clean up test data
+                setTimeout(() => {
+                    db.collection('test_connection').doc(testRef.id).delete();
+                }, 3000);
+                
+            } catch (error) {
+                document.getElementById('loginStatus').innerHTML = `
+                    <div style="background: #f44336; color: white; padding: 10px; border-radius: 5px;">
+                        <i class="fas fa-times-circle"></i>
+                        <strong>❌ FIREBASE ERROR!</strong><br>
+                        ${error.message}<br>
+                        Periksa firebase-config.js
+                    </div>
+                `;
+            }
+        }
+        
+        // Clear localStorage
+        function clearStorage() {
+            if (confirm('Clear semua cache dan session?')) {
+                localStorage.clear();
+                sessionStorage.clear();
+                alert('Cache cleared! Page akan reload...');
+                location.reload();
+            }
+        }
+        
+        // Auto test Firebase saat page load
+        window.addEventListener('load', function() {
+            setTimeout(testFirebase, 1000);
+        });
+    </script>
 </body>
 </html>
