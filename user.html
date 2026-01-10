@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard User</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="firebase-config.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <h1><i class="fas fa-user"></i> Dashboard Pengguna</h1>
+            <div class="nav-links">
+                <span id="userGreeting"></span>
+                <button onclick="customAuth.logout()" class="btn-logout">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="user-container">
+        <div class="user-welcome">
+            <h2 id="welcomeMessage"></h2>
+            <p>Selamat datang di program 7 Kebiasaan Anak Indonesia Hebat!</p>
+        </div>
+
+        <div class="kebiasaan-tracker">
+            <h3><i class="fas fa-chart-line"></i> Tracker Kebiasaan Harian</h3>
+            <div class="tracker-grid">
+                <!-- Kebiasaan tracker akan diisi oleh JavaScript -->
+            </div>
+        </div>
+
+        <div class="progress-section">
+            <h3><i class="fas fa-trophy"></i> Progress Mingguan</h3>
+            <div class="progress-chart">
+                <canvas id="progressChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+
+        <div class="tips-section">
+            <h3><i class="fas fa-lightbulb"></i> Tips Hari Ini</h3>
+            <div class="tips-content">
+                <div class="tip-card">
+                    <i class="fas fa-sun"></i>
+                    <h4>Bangun Pagi</h4>
+                    <p>Coba bangun 15 menit lebih awal hari ini untuk memulai hari dengan tenang.</p>
+                </div>
+                <div class="tip-card">
+                    <i class="fas fa-book"></i>
+                    <h4>Membaca</h4>
+                    <p>Baca minimal 10 halaman buku favorit Anda hari ini.</p>
+                </div>
+                <div class="tip-card">
+                    <i class="fas fa-hands-helping"></i>
+                    <h4>Membantu</h4>
+                    <p>Tawarkan bantuan kepada orang tua tanpa diminta.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Check authentication
+            if (!customAuth.isLoggedIn()) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const user = customAuth.getCurrentUser();
+            document.getElementById('userGreeting').textContent = `Halo, ${user.nama}`;
+            document.getElementById('welcomeMessage').textContent = `Selamat datang, ${user.nama}!`;
+
+            // Initialize kebiasaan tracker
+            initializeTracker();
+            
+            // Load progress data
+            loadProgressData();
+        });
+
+        function initializeTracker() {
+            const trackerGrid = document.querySelector('.tracker-grid');
+            const kebiasaanList = [
+                { id: 1, name: 'Bangun Pagi', icon: 'fas fa-sun' },
+                { id: 2, name: 'Membaca Buku', icon: 'fas fa-book' },
+                { id: 3, name: 'Membantu Orang Tua', icon: 'fas fa-hands-helping' },
+                { id: 4, name: 'Makan Sehat', icon: 'fas fa-apple-alt' },
+                { id: 5, name: 'Olahraga', icon: 'fas fa-basketball-ball' },
+                { id: 6, name: 'Berdoa & Bersyukur', icon: 'fas fa-pray' },
+                { id: 7, name: 'Tidur Tepat Waktu', icon: 'fas fa-bed' }
+            ];
+
+            kebiasaanList.forEach(kebiasaan => {
+                const trackerItem = document.createElement('div');
+                trackerItem.className = 'tracker-item';
+                trackerItem.innerHTML = `
+                    <div class="tracker-icon">
+                        <i class="${kebiasaan.icon}"></i>
+                    </div>
+                    <h4>${kebiasaan.name}</h4>
+                    <div class="tracker-buttons">
+                        <button class="btn-success" onclick="markDone(${kebiasaan.id})">
+                            <i class="fas fa-check"></i> Sudah
+                        </button>
+                        <button class="btn-skip" onclick="markSkip(${kebiasaan.id})">
+                            <i class="fas fa-times"></i> Lewati
+                        </button>
+                    </div>
+                `;
+                trackerGrid.appendChild(trackerItem);
+            });
+        }
+
+        function markDone(kebiasaanId) {
+            alert(`Kebiasaan ${kebiasaanId} ditandai selesai!`);
+            // Save to database here
+        }
+
+        function markSkip(kebiasaanId) {
+            if (confirm('Yakin ingin melewati kebiasaan ini?')) {
+                // Save to database here
+            }
+        }
+
+        function loadProgressData() {
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'],
+                    datasets: [{
+                        label: 'Kebiasaan Tercapai',
+                        data: [5, 7, 6, 7, 4, 6, 7],
+                        backgroundColor: '#4CAF50'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 7
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
